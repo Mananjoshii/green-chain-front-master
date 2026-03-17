@@ -11,7 +11,7 @@ Instead of just collecting complaints, EcoChain **verifies, analyzes, and priori
 🚀 **Access the live application here:**  
 👉 https://green-chain-front-master.vercel.app
 
-> Replace the above link with your deployed frontend/backend URL.
+
 
 ---
 
@@ -64,13 +64,9 @@ Visualization (Zones + Insights)
 - Tailwind CSS
 
 ### Backend
-- FastAPI (Python)
-
-### AI/ML
-- YOLOv8 (Image Classification)
-- Computer Vision (Waste Detection)
+- Node.js
 
 ### Database
-- PostgreSQL (Hotspots + Reports)
+- Supabase (Hotspots + Reports)
 
 ---
