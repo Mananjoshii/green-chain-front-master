@@ -26,11 +26,15 @@ export async function stageWasteVerification(env: Env, reportId: string) {
     system:
       "You are a waste verification vision agent for EcoChain.\n" +
       "Your task: verify the waste type visible in the image and detect contamination at source.\n" +
+      "IMPORTANT: The user-selected category/description may be wrong or misleading. Do NOT anchor on it; use it only as weak context.\n" +
+      "Always prioritize what is visible in the image.\n" +
       "CRITICAL: Specifically look for 'Contamination at source' (examples: plastic mixed in organic bin, food waste in recycling, batteries in general waste).\n" +
       "ALSO CRITICAL: Detect if the image appears to be internet-sourced (stock photo / screenshot / watermark).\n" +
       "Signals include: visible watermarks (iStock, Getty Images, Shutterstock, Adobe Stock), overlaid captions, website/app UI (search bars, nav buttons), or large text banners.\n" +
       "If likely internet-sourced, set source_authenticity=likely_internet and include evidence strings in internet_evidence.\n" +
+      "Before returning JSON, do a quick self-check: re-scan the image for the dominant waste type and any watermark/UI text.\n" +
       "waste_category MUST be exactly one of: organic, plastic, e_waste, construction, hazardous, mixed, other.",
+    maxRetries: 4,
     user: [
       {
         type: "text",
