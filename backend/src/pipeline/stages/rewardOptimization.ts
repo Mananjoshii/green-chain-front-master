@@ -16,7 +16,7 @@ export async function stageRewardOptimization(env: Env, reportId: string) {
 
   const { data: report, error } = await supabaseAdmin
     .from("reports")
-    .select("id,severity")
+    .select("id,severity,status")
     .eq("id", reportId)
     .single();
   if (error) throw error;
@@ -38,15 +38,20 @@ export async function stageRewardOptimization(env: Env, reportId: string) {
   const contaminationBonus = contamination ? 5 : 0;
   const token_reward = Math.round(base * multiplier + contaminationBonus);
 
-  const { error: updErr } = await supabaseAdmin.from("reports").update({ token_reward }).eq("id", reportId);
-  if (updErr) throw updErr;
+  // IMPORTANT: Do not grant rewards during AI processing.
+  // We only *suggest* a reward here; minting/crediting happens only when a municipal officer resolves the report.
+  // The suggested reward is stored in `report_events.metadata` for the `reward_optimization` stage.
+  const suggested =
+    report.status === "rejected"
+      ? 0
+      : token_reward;
 
   await upsertReportEvent(env, {
     reportId,
     agentType: "reward_optimization",
     stageStatus: "processing",
-    message: `Token reward set to ${token_reward}`,
-    metadata: { base, multiplier, contamination_bonus: contaminationBonus, ai_quality_score, token_reward }
+    message: report.status === "rejected" ? "Report rejected; no reward suggested" : `Suggested token reward: ${suggested}`,
+    metadata: { base, multiplier, contamination_bonus: contaminationBonus, ai_quality_score, suggested_token_reward: suggested }
   });
 }
 

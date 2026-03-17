@@ -16,7 +16,14 @@ export const WasteVerificationSchema = z.object({
   }),
   ai_quality_score: z.number().min(0).max(1),
   contamination_at_source: z.boolean(),
-  contamination_feedback: z.string().default("No feedback provided")
+  contamination_feedback: z.string().default("No feedback provided"),
+
+  // Authenticity signals: detect stock-photo watermarks, screenshot UI, or obvious internet branding.
+  // Defaults keep backward compatibility if the model doesn't return them.
+  source_authenticity: z.enum(["genuine", "likely_internet", "uncertain"]).default("uncertain"),
+  has_watermark_or_stock_branding: z.boolean().default(false),
+  has_screenshot_ui: z.boolean().default(false),
+  internet_evidence: z.array(z.string()).default([])
 });
 
 export type WasteVerificationResult = z.infer<typeof WasteVerificationSchema>;

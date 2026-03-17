@@ -88,7 +88,11 @@ export async function stageFraudDetection(env: Env, reportId: string) {
     ? `Potential duplicate: at least one report with the exact same latitude and longitude within ${WINDOW_HOURS}h`
     : "No exact same-location duplicate detected";
 
-  const { error: updErr } = await supabaseAdmin.from("reports").update({ status }).eq("id", reportId);
+  const update: Record<string, unknown> = { status };
+  // Ensure a rejected report cannot show/grant rewards from earlier pipeline stages.
+  if (status === "rejected") update.token_reward = null;
+
+  const { error: updErr } = await supabaseAdmin.from("reports").update(update).eq("id", reportId);
   if (updErr) throw updErr;
 
   await upsertReportEvent(env, {

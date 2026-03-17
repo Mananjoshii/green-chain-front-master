@@ -56,25 +56,45 @@ export function municipalRouter(env: Env) {
       const { data: report, error: fetchError } = await supabaseAdmin.from("reports").select("*").eq("id", id).single();
       if (fetchError) throw fetchError;
 
-      const { error: updateError } = await supabaseAdmin.from("reports").update({ status: "resolved" }).eq("id", id);
+      if (report.status === "rejected") {
+        return res.status(400).json({ error: "Cannot resolve a rejected report" });
+      }
+
+      // Only grant rewards on manual municipal resolution.
+      // Prefer the suggested reward computed by the AI pipeline (stored in report_events.metadata),
+      // otherwise fall back to any existing token_reward (legacy behavior).
+      let tokensToMint: number | null =
+        typeof report.token_reward === "number" ? report.token_reward : null;
+
+      if (tokensToMint == null) {
+        const { data: rewardEvent, error: rewardEvErr } = await supabaseAdmin
+          .from("report_events")
+          .select("metadata")
+          .eq("report_id", id)
+          .eq("agent_type", "reward_optimization")
+          .maybeSingle();
+        if (rewardEvErr) throw rewardEvErr;
+
+        const suggested = Number((rewardEvent?.metadata as any)?.suggested_token_reward);
+        if (Number.isFinite(suggested) && suggested > 0) tokensToMint = Math.round(suggested);
+      }
+
+      const { error: updateError } = await supabaseAdmin
+        .from("reports")
+        .update({ status: "resolved", token_reward: tokensToMint })
+        .eq("id", id);
       if (updateError) throw updateError;
 
-      // DB-only hackathon mode: create a token transaction record if reward exists.
-      if (typeof report.token_reward === "number" && report.token_reward > 0) {
+      if (typeof tokensToMint === "number" && tokensToMint > 0) {
         const { error: txError } = await supabaseAdmin.from("token_transactions").insert({
           user_id: report.user_id,
           report_id: report.id,
-          tokens: report.token_reward,
+          tokens: tokensToMint,
           status: "minted",
           tx_hash: null
         });
         if (txError) throw txError;
       }
-
-      // After resolution + reward mint record, remove the report.
-      // NOTE: this will cascade-delete `report_events` and will set token_transactions.report_id to NULL (FK is ON DELETE SET NULL).
-      const { error: deleteError } = await supabaseAdmin.from("reports").delete().eq("id", id);
-      if (deleteError) throw deleteError;
 
       return res.status(200).json({ ok: true });
     } catch (err) {
