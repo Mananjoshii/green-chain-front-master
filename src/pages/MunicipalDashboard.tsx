@@ -152,6 +152,11 @@ const MunicipalDashboard = () => {
                             <Button size="sm" onClick={() => handleAction(r.id, "resolved")} disabled={updateStatus.isPending || resolveReport.isPending}>Resolve</Button>
                           </motion.div>
                         )}
+                        {r.status !== "resolved" && r.status !== "rejected" && (
+                          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                            <Button size="sm" variant="destructive" onClick={() => handleAction(r.id, "rejected")} disabled={updateStatus.isPending}>Reject</Button>
+                          </motion.div>
+                        )}
                       </div>
                     </motion.div>
                   ))}

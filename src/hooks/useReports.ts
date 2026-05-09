@@ -111,9 +111,9 @@ export function useCitizenStats() {
       if (error) throw error;
 
       const total = reports.length;
-      const resolved = reports.filter((r) => r.status === "resolved").length;
-      const tokens = reports.reduce((sum, r) => sum + (Number(r.token_reward) || 0), 0);
-      return { totalReports: total, resolvedReports: resolved, tokensEarned: tokens };
+      const resolvedReports = reports.filter((r) => r.status === "resolved");
+      const tokens = resolvedReports.reduce((sum, r) => sum + (Number(r.token_reward) || 0), 0);
+      return { totalReports: total, resolvedReports: resolvedReports.length, tokensEarned: tokens };
     },
   });
 }
@@ -155,6 +155,7 @@ export function useMunicipalResolveReport() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["municipal-reports"] });
       queryClient.invalidateQueries({ queryKey: ["my-reports"] });
+      queryClient.invalidateQueries({ queryKey: ["citizen-stats"] });
     },
   });
 }
