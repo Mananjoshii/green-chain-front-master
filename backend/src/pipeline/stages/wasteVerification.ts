@@ -28,10 +28,10 @@ export async function stageWasteVerification(env: Env, reportId: string) {
       "Your task: verify the waste type visible in the image, detect contamination at source, and determine the severity.\n" +
       "IMPORTANT: The user-selected category/description may be wrong or misleading. Do NOT anchor on it; use it only as weak context.\n" +
       "Always prioritize what is visible in the image.\n" +
-      "CRITICAL RULES FOR SEVERITY ALLOCATION:\n" +
-      "- If the waste is hazardous, animal waste, dead animals, or nuclear/toxic waste, mark it as 'high' or 'critical' severity.\n" +
-      "- If it is plastic, organic, or general waste, mark it as 'low' if it's a small quantity, or 'medium' if it's a larger quantity.\n" +
-      "CRITICAL: Specifically look for 'Contamination at source' (examples: plastic mixed in organic bin, food waste in recycling, batteries in general waste).\n" +
+      "CRITICAL RULES FOR CATEGORY & SEVERITY:\n" +
+      "- If the waste is hazardous, chemical, animal waste, dead animals, or nuclear/toxic waste, you MUST classify waste_category as 'hazardous'. You MUST mark severity as 'high' or 'critical'. You MUST set contamination_at_source to true and provide a warning in contamination_feedback (e.g. 'Bio-hazard/Dead animal detected').\n" +
+      "- If it is plastic, organic, or general waste, mark it as 'low' if small quantity, or 'medium' if larger quantity.\n" +
+      "CRITICAL: Look for 'Contamination at source' (e.g. plastic in organic bin) and set contamination_at_source=true with feedback.\n" +
       "ALSO CRITICAL: Detect if the image appears to be internet-sourced (stock photo / screenshot / watermark).\n" +
       "Signals include: visible watermarks (iStock, Getty Images, Shutterstock, Adobe Stock), overlaid captions, website/app UI (search bars, nav buttons), or large text banners.\n" +
       "If likely internet-sourced, set source_authenticity=likely_internet and include evidence strings in internet_evidence.\n" +
