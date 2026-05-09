@@ -122,6 +122,69 @@ export function adminRouter(env: Env) {
     }
   });
 
+  router.post('/reports/:id/manual-verify', requirePlannerOrAdmin, async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const { decision, admin_notes } = req.body as { decision: 'confirmed' | 'failed'; admin_notes?: string };
+
+      if (!['confirmed', 'failed'].includes(decision)) {
+        return res.status(400).json({ error: 'decision must be "confirmed" or "failed"' });
+      }
+
+      const { data: report } = await supabaseAdmin
+        .from('reports')
+        .select('id, status, verification_status, token_reward, user_id')
+        .eq('id', id)
+        .single();
+
+      if (!report) return res.status(404).json({ error: 'Report not found' });
+
+      if (report.verification_status !== 'manual_review') {
+        return res.status(422).json({ error: 'Report is not in manual_review state' });
+      }
+
+      const newStatus = decision === 'confirmed' ? 'resolved' : 'in_progress';
+      const newVerificationStatus = decision === 'confirmed' ? 'confirmed' : 'failed';
+
+      await supabaseAdmin.from('reports').update({
+        status: newStatus,
+        verification_status: newVerificationStatus,
+        verification_reasoning: admin_notes ?? `Manually ${decision} by admin`,
+      }).eq('id', id);
+
+      if (decision === 'confirmed') {
+        // Need to get suggested reward or default
+        const { data: rewardEvent } = await supabaseAdmin
+          .from('report_events')
+          .select('metadata')
+          .eq('report_id', id)
+          .eq('agent_type', 'reward_optimization')
+          .maybeSingle();
+
+        const suggested = Number((rewardEvent?.metadata as any)?.suggested_token_reward) || 10;
+
+        await supabaseAdmin.from('token_transactions').insert({
+          report_id: id,
+          user_id: report.user_id,
+          tokens: suggested,
+          status: 'minted',
+          tx_hash: null
+        });
+        await supabaseAdmin.from('reports').update({ token_minted: true, token_reward: suggested }).eq('id', id);
+      }
+
+      await supabaseAdmin.from('report_events').insert({
+        report_id: id,
+        agent_type: decision === 'confirmed' ? 'verification_confirmed' : 'verification_failed',
+        metadata: { manual: true, admin_id: req.user?.id, admin_notes },
+      });
+
+      return res.json({ success: true, new_status: newStatus });
+    } catch (err) {
+      next(err);
+    }
+  });
+
   return router;
 }
 

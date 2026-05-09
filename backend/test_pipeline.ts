@@ -1,3 +1,5 @@
+import "dotenv/config";
+import process from "process";
 import { processReport } from './src/pipeline/processReport.js';
 import { Env } from './src/env.js';
 import { createClient } from '@supabase/supabase-js';

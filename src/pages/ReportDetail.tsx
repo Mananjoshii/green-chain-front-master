@@ -13,6 +13,10 @@ import type { AgentType, AgentStageStatus } from "@/types";
 import { format } from "date-fns";
 import { CheckCircle2, Clock, Loader2, XCircle, MapPin, Calendar, Play } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/AuthContext";
+import { ResolutionUploadPanel } from "@/components/ResolutionUploadPanel";
+import { BeforeAfterPanel } from "@/components/BeforeAfterPanel";
+import { ManualVerifyPanel } from "@/components/ManualVerifyPanel";
 
 const stageIcon: Record<AgentStageStatus, React.ReactNode> = {
   pending: <Clock className="h-5 w-5 text-muted-foreground" />,
@@ -28,12 +32,23 @@ const stageBorder: Record<AgentStageStatus, string> = {
   failed: "border-destructive",
 };
 
+const customEventLabels: Record<string, { icon: string; text: string }> = {
+  resolution_photo_submitted: { icon: '📷', text: 'Officer submitted resolution photo — AI verifying' },
+  verification_confirmed:     { icon: '✅', text: 'AI verified — area confirmed clean' },
+  verification_failed:        { icon: '❌', text: 'Verification failed — report re-opened' },
+  verification_manual_review: { icon: '👁', text: 'Flagged for manual review by supervisor' },
+};
+
 const ReportDetail = () => {
   const { id } = useParams<{ id: string }>();
   const { data: report, isLoading, refetch: refetchReport } = useReport(id!);
   const { data: events, refetch: refetchEvents } = useReportEvents(id!);
   const [processing, setProcessing] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
+  
+  const isOfficerOrAdmin = user?.roles?.some(r => r === 'municipal_officer' || r === 'admin');
+  const isPlannerOrAdmin = user?.roles?.some(r => r === 'city_planner' || r === 'admin');
 
   const runPipeline = async () => {
     setProcessing(true);
@@ -53,8 +68,10 @@ const ReportDetail = () => {
     }
   };
 
-  const eventMap = new Map<AgentType, { status: AgentStageStatus; message?: string | null; time?: string }>();
+  const eventMap = new Map<AgentType | string, { status: AgentStageStatus | string; message?: string | null; time?: string }>();
   events?.forEach((e) => {
+    // Some events might just have event_type instead of agent_type if they are custom timeline events
+    // We inserted custom event_type in backend, but it's saved in agent_type column due to schema limits
     eventMap.set(e.agent_type, { status: e.stage_status, message: e.message, time: e.created_at });
   });
 
@@ -70,7 +87,7 @@ const ReportDetail = () => {
         </div>
         <div className="flex items-center gap-2">
           <Badge className={SEVERITY_COLORS[report.severity]}>{report.severity}</Badge>
-          <Badge className={STATUS_COLORS[report.status]}>{report.status}</Badge>
+          <Badge className={STATUS_COLORS[report.status] || "bg-gray-100 text-gray-800"}>{report.status.replace('_', ' ')}</Badge>
           {report.status === "pending" && (
             <Button size="sm" onClick={runPipeline} disabled={processing} className="gap-1.5">
               {processing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
@@ -94,13 +111,40 @@ const ReportDetail = () => {
         </Card>
 
         {report.image_url && (
-          <Card className="glass overflow-hidden">
+          <Card className="glass overflow-hidden h-fit">
             <CardContent className="p-0">
               <img src={report.image_url} alt="Waste report" className="w-full object-cover" />
             </CardContent>
           </Card>
         )}
       </div>
+
+      {report.status === 'in_progress' && isOfficerOrAdmin && (
+        <ResolutionUploadPanel reportId={report.id} />
+      )}
+
+      {report.verification_status === 'manual_review' && isPlannerOrAdmin && report.resolution_image_url && report.image_url && (
+        <ManualVerifyPanel 
+          reportId={report.id} 
+          beforeImageUrl={report.image_url}
+          afterImageUrl={report.resolution_image_url}
+          aiReasoning={report.verification_reasoning}
+          aiConfidence={report.verification_score}
+        />
+      )}
+
+      {report.resolution_image_url && report.image_url && (
+        <BeforeAfterPanel 
+          beforeImageUrl={report.image_url}
+          afterImageUrl={report.resolution_image_url}
+          reportedAt={report.created_at}
+          resolvedAt={report.resolution_submitted_at}
+          verificationStatus={report.verification_status}
+          verificationScore={report.verification_score}
+          verificationReasoning={report.verification_reasoning}
+          tokenAmount={report.token_reward}
+        />
+      )}
 
       {/* AI Agent Pipeline */}
       <Card className="glass">
@@ -109,7 +153,7 @@ const ReportDetail = () => {
           <motion.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-0">
             {AGENT_ORDER.map((agent, i) => {
               const event = eventMap.get(agent);
-              const status = event?.status ?? "pending";
+              const status = event?.status as AgentStageStatus ?? "pending";
               return (
                 <motion.div key={agent} variants={fadeInUp} className="flex gap-4">
                   <div className="flex flex-col items-center">
@@ -121,6 +165,7 @@ const ReportDetail = () => {
                     >
                       {stageIcon[status]}
                     </motion.div>
+                    {/* Render line except for last item */}
                     {i < AGENT_ORDER.length - 1 && (
                       <div className={`h-8 w-0.5 ${status === "completed" ? "bg-emerald-400" : "bg-border"}`} />
                     )}
@@ -130,6 +175,28 @@ const ReportDetail = () => {
                     <p className="text-sm text-muted-foreground capitalize">{status}</p>
                     {event?.message && <p className="mt-1 text-sm">{event.message}</p>}
                     {event?.time && <p className="text-xs text-muted-foreground">{format(new Date(event.time), "h:mm a")}</p>}
+                  </div>
+                </motion.div>
+              );
+            })}
+            {/* Custom events renderer */}
+            {Object.keys(customEventLabels).map((eventName) => {
+              const customEvent = eventMap.get(eventName);
+              if (!customEvent) return null;
+              const label = customEventLabels[eventName];
+              
+              return (
+                <motion.div key={eventName} variants={fadeInUp} className="flex gap-4">
+                  <div className="flex flex-col items-center">
+                     <div className="h-8 w-0.5 bg-border -mt-6" />
+                     <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 bg-card border-border">
+                        <span className="text-sm">{label.icon}</span>
+                     </div>
+                  </div>
+                  <div className="pb-6 pt-2">
+                    <p className="font-medium">{label.text}</p>
+                    {customEvent.time && <p className="text-xs text-muted-foreground">{format(new Date(customEvent.time), "PPpp")}</p>}
+                    {customEvent.message && <p className="mt-1 text-sm text-muted-foreground">{customEvent.message}</p>}
                   </div>
                 </motion.div>
               );

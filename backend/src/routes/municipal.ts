@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
+import multer from "multer";
 
 import type { Env } from "../env.js";
 import { getAdminSupabase } from "../supabase/clients.js";
@@ -48,6 +49,86 @@ export function municipalRouter(env: Env) {
     }
   });
 
+  const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+
+  router.post("/reports/:id/submit-resolution", requireMunicipal, upload.single("resolution_image"), async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const { officer_notes } = req.body;
+      const file = req.file;
+
+      if (!file) {
+        return res.status(400).json({ error: "resolution_image is required" });
+      }
+
+      const { data: report, error } = await supabaseAdmin
+        .from("reports")
+        .select("id, status, verification_status")
+        .eq("id", id)
+        .single();
+
+      if (error || !report) return res.status(404).json({ error: "Report not found" });
+
+      if (!["in_progress", "assigned"].includes(report.status)) {
+        return res.status(422).json({
+          error: `Cannot submit resolution for a report with status: ${report.status}`,
+        });
+      }
+
+      const fileName = `resolutions/${id}/${Date.now()}_${file.originalname}`;
+      const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+        .from("report-images")
+        .upload(fileName, file.buffer, {
+          contentType: file.mimetype,
+          upsert: true,
+        });
+
+      if (uploadError) {
+        return res.status(500).json({ error: "Image upload failed", details: uploadError.message });
+      }
+
+      const { data: publicUrlData } = supabaseAdmin.storage
+        .from("report-images")
+        .getPublicUrl(fileName);
+
+      const resolutionImageUrl = publicUrlData.publicUrl;
+
+      await supabaseAdmin.from("reports").update({
+        resolution_image_url: resolutionImageUrl,
+        resolution_image_path: fileName,
+        resolution_submitted_at: new Date().toISOString(),
+        resolution_submitted_by: req.user?.id,
+        status: "pending_verification",
+        verification_status: "pending",
+      }).eq("id", id);
+
+      await supabaseAdmin.from("report_events").insert({
+        report_id: id,
+        agent_type: "resolution_photo_submitted",
+        metadata: { officer_notes, officer_id: req.user?.id },
+      });
+
+      // Trigger verification agent asynchronously
+      setImmediate(async () => {
+        try {
+          const { runResolutionVerificationAgent } = await import("../pipeline/stages/resolutionVerification.js");
+          await runResolutionVerificationAgent(env, id);
+        } catch (err) {
+          console.error("Resolution verification agent failed:", err);
+        }
+      });
+
+      return res.status(202).json({
+        status: "pending_verification",
+        message: "Resolution photo submitted. AI verification in progress.",
+        report_id: id,
+      });
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // Keep the old resolve endpoint for fallback or manual override without verification, but remove token minting
   router.post("/reports/:id/resolve", requireMunicipal, async (req, res, next) => {
     try {
       const Params = z.object({ id: z.string().min(1) });
@@ -60,41 +141,11 @@ export function municipalRouter(env: Env) {
         return res.status(400).json({ error: "Cannot resolve a rejected report" });
       }
 
-      // Only grant rewards on manual municipal resolution.
-      // Prefer the suggested reward computed by the AI pipeline (stored in report_events.metadata),
-      // otherwise fall back to any existing token_reward (legacy behavior).
-      let tokensToMint: number | null =
-        typeof report.token_reward === "number" ? report.token_reward : null;
-
-      if (tokensToMint == null) {
-        const { data: rewardEvent, error: rewardEvErr } = await supabaseAdmin
-          .from("report_events")
-          .select("metadata")
-          .eq("report_id", id)
-          .eq("agent_type", "reward_optimization")
-          .maybeSingle();
-        if (rewardEvErr) throw rewardEvErr;
-
-        const suggested = Number((rewardEvent?.metadata as any)?.suggested_token_reward);
-        if (Number.isFinite(suggested) && suggested > 0) tokensToMint = Math.round(suggested);
-      }
-
       const { error: updateError } = await supabaseAdmin
         .from("reports")
-        .update({ status: "resolved", token_reward: tokensToMint })
+        .update({ status: "resolved" })
         .eq("id", id);
       if (updateError) throw updateError;
-
-      if (typeof tokensToMint === "number" && tokensToMint > 0) {
-        const { error: txError } = await supabaseAdmin.from("token_transactions").insert({
-          user_id: report.user_id,
-          report_id: report.id,
-          tokens: tokensToMint,
-          status: "minted",
-          tx_hash: null
-        });
-        if (txError) throw txError;
-      }
 
       return res.status(200).json({ ok: true });
     } catch (err) {

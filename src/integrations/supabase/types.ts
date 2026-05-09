@@ -239,7 +239,13 @@ export type Database = {
         | "geo_intelligence"
         | "municipal_coordination"
         | "reward_optimization"
+        | "reward_optimization"
         | "fraud_detection"
+        | "resolution_verification"
+        | "resolution_photo_submitted"
+        | "verification_confirmed"
+        | "verification_failed"
+        | "verification_manual_review"
       app_role: "citizen" | "municipal_officer" | "city_planner" | "admin"
       report_status:
         | "pending"
@@ -248,6 +254,7 @@ export type Database = {
         | "in_progress"
         | "resolved"
         | "rejected"
+        | "pending_verification"
       severity_level: "low" | "medium" | "high" | "critical"
       waste_category:
         | "organic"
@@ -391,6 +398,11 @@ export const Constants = {
         "municipal_coordination",
         "reward_optimization",
         "fraud_detection",
+        "resolution_verification",
+        "resolution_photo_submitted",
+        "verification_confirmed",
+        "verification_failed",
+        "verification_manual_review",
       ],
       app_role: ["citizen", "municipal_officer", "city_planner", "admin"],
       report_status: [
@@ -400,6 +412,7 @@ export const Constants = {
         "in_progress",
         "resolved",
         "rejected",
+        "pending_verification",
       ],
       severity_level: ["low", "medium", "high", "critical"],
       waste_category: [

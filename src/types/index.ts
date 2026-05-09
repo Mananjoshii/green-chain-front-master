@@ -2,7 +2,19 @@ import type { Tables, Enums } from "@/integrations/supabase/types";
 
 // Re-export database row types
 export type Profile = Tables<"profiles">;
-export type Report = Tables<"reports">;
+export type VerificationStatus = 'not_started' | 'pending' | 'confirmed' | 'failed' | 'manual_review';
+
+export type Report = Tables<"reports"> & {
+  resolution_image_url?: string | null;
+  resolution_image_path?: string | null;
+  resolution_submitted_at?: string | null;
+  resolution_submitted_by?: string | null;
+  verification_status?: VerificationStatus | null;
+  verification_score?: number | null;
+  verification_reasoning?: string | null;
+  verification_ran_at?: string | null;
+  token_minted?: boolean | null;
+};
 export type ReportEvent = Tables<"report_events">;
 export type Hotspot = Tables<"hotspots">;
 export type TokenTransaction = Tables<"token_transactions">;

@@ -6,7 +6,8 @@ export type AgentType =
   | "geo_intelligence"
   | "municipal_coordination"
   | "reward_optimization"
-  | "fraud_detection";
+  | "fraud_detection"
+  | "resolution_verification";
 
 export type StageStatus = "pending" | "processing" | "completed" | "failed";
 

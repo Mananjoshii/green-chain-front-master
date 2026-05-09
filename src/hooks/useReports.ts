@@ -39,6 +39,7 @@ export function useReport(id: string) {
   return useQuery({
     queryKey: ["report", id],
     enabled: !!id,
+    refetchInterval: 3000,
     queryFn: async () => {
       const { data, error } = await supabase.from("reports").select("*").eq("id", id).single();
       if (error) throw error;
