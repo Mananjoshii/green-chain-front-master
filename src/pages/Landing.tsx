@@ -10,6 +10,9 @@ import { Leaf, MapPin, Search, AlertTriangle, AlertCircle, Info, ChevronRight, X
 import { useEffect, useRef, useState } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import "leaflet.markercluster";
+import "leaflet.markercluster/dist/MarkerCluster.css";
+import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import { useHotspots } from "@/hooks/useHotspots";
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -61,7 +64,35 @@ const Landing = () => {
       subdomains: 'abcd',
       maxZoom: 20
     }).addTo(map);
-    
+    const clusterGroup = L.markerClusterGroup({
+      maxClusterRadius: 50,
+      iconCreateFunction: (cluster) => {
+        const childMarkers = cluster.getAllChildMarkers();
+        let totalReports = 0;
+        let weightedSeveritySum = 0;
+        
+        childMarkers.forEach((marker: any) => {
+          const rc = marker.options.reportCount || 0;
+          const sev = marker.options.avgSeverity || 0;
+          totalReports += rc;
+          weightedSeveritySum += (rc * sev);
+        });
+
+        const avgSeverity = totalReports > 0 ? weightedSeveritySum / totalReports : 0;
+        const { fill } = zoneColor(avgSeverity);
+
+        const size = clamp(36 + Math.log2(Math.max(totalReports, 1)) * 4, 36, 60);
+        const iconHtml = `<div style="background-color: ${fill}; border: 3px solid rgba(255,255,255,0.9); color: white; border-radius: 50%; width: ${size}px; height: ${size}px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 15px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.2);">${totalReports}</div>`;
+        
+        return L.divIcon({
+          html: iconHtml,
+          className: 'custom-cluster-icon',
+          iconSize: [size, size],
+          iconAnchor: [size / 2, size / 2]
+        });
+      }
+    });
+
     hotspots?.forEach((h) => {
       const avgSeverity = Number(h.avg_severity ?? 0);
       const { stroke, fill } = zoneColor(avgSeverity);
@@ -84,8 +115,7 @@ const Landing = () => {
             `</div>`
         );
 
-      // We use a custom DivIcon to mimic the red circles with numbers from the reference UI
-      const iconHtml = `<div style="background-color: ${fill}; border: 2px solid white; color: white; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);">${count}</div>`;
+      const iconHtml = `<div style="background-color: ${fill}; border: 2px solid white; color: white; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">${count}</div>`;
       
       const customIcon = L.divIcon({
         html: iconHtml,
@@ -94,10 +124,17 @@ const Landing = () => {
         iconAnchor: [18, 18]
       });
 
-      L.marker([h.latitude, h.longitude], { icon: customIcon })
-        .addTo(map)
-        .bindPopup(`<div><p style="font-weight:600">${h.area_name}</p><p>${count} reports</p><p>Avg severity: ${avgSeverity.toFixed(1)}</p></div>`);
+      const marker = L.marker([h.latitude, h.longitude], { 
+        icon: customIcon,
+        reportCount: count,
+        avgSeverity: avgSeverity
+      } as any);
+      
+      marker.bindPopup(`<div><p style="font-weight:600">${h.area_name}</p><p>${count} reports</p><p>Avg severity: ${avgSeverity.toFixed(1)}</p></div>`);
+      clusterGroup.addLayer(marker);
     });
+
+    map.addLayer(clusterGroup);
 
     setTimeout(() => map.invalidateSize(), 100);
     return () => { map.remove(); mapRef.current = null; };
