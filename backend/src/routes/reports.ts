@@ -55,6 +55,7 @@ export function reportsRouter(env: Env) {
       await processReport(env, { reportId: id, requestedByUserId: req.user.id, requestedByRole: req.user.role });
       return res.status(200).json({ ok: true });
     } catch (err) {
+      console.error(`[API] /reports/${req.params.id}/process failed with error:`, err);
       next(err);
     }
   });

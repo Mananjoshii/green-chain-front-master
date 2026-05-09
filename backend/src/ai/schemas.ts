@@ -17,6 +17,11 @@ export const WasteVerificationSchema = z.object({
   ai_quality_score: z.number().min(0).max(1),
   contamination_at_source: z.boolean(),
   contamination_feedback: z.string().default("No feedback provided"),
+  suggested_severity: z.string().transform((val) => {
+    const v = val.toLowerCase().trim();
+    if (v === "low" || v === "medium" || v === "high" || v === "critical") return v as "low" | "medium" | "high" | "critical";
+    return "medium";
+  }).default("medium"),
 
   // Authenticity signals: detect stock-photo watermarks, screenshot UI, or obvious internet branding.
   // Defaults keep backward compatibility if the model doesn't return them.

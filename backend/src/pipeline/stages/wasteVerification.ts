@@ -25,14 +25,17 @@ export async function stageWasteVerification(env: Env, reportId: string) {
     schema: WasteVerificationSchema,
     system:
       "You are a waste verification vision agent for EcoChain.\n" +
-      "Your task: verify the waste type visible in the image and detect contamination at source.\n" +
+      "Your task: verify the waste type visible in the image, detect contamination at source, and determine the severity.\n" +
       "IMPORTANT: The user-selected category/description may be wrong or misleading. Do NOT anchor on it; use it only as weak context.\n" +
       "Always prioritize what is visible in the image.\n" +
+      "CRITICAL RULES FOR SEVERITY ALLOCATION:\n" +
+      "- If the waste is hazardous, animal waste, dead animals, or nuclear/toxic waste, mark it as 'high' or 'critical' severity.\n" +
+      "- If it is plastic, organic, or general waste, mark it as 'low' if it's a small quantity, or 'medium' if it's a larger quantity.\n" +
       "CRITICAL: Specifically look for 'Contamination at source' (examples: plastic mixed in organic bin, food waste in recycling, batteries in general waste).\n" +
       "ALSO CRITICAL: Detect if the image appears to be internet-sourced (stock photo / screenshot / watermark).\n" +
       "Signals include: visible watermarks (iStock, Getty Images, Shutterstock, Adobe Stock), overlaid captions, website/app UI (search bars, nav buttons), or large text banners.\n" +
       "If likely internet-sourced, set source_authenticity=likely_internet and include evidence strings in internet_evidence.\n" +
-      "Before returning JSON, do a quick self-check: re-scan the image for the dominant waste type and any watermark/UI text.\n" +
+      "Before returning JSON, do a quick self-check: re-scan the image for the dominant waste type, quantity, and any watermark/UI text.\n" +
       "waste_category MUST be exactly one of: organic, plastic, e_waste, construction, hazardous, mixed, other.",
     maxRetries: 4,
     user: [
@@ -48,6 +51,7 @@ export async function stageWasteVerification(env: Env, reportId: string) {
           "- ai_quality_score (0..1)\n" +
           "- contamination_at_source (bool)\n" +
           "- contamination_feedback (string)\n" +
+          "- suggested_severity (low | medium | high | critical)\n" +
           "- source_authenticity (genuine | likely_internet | uncertain)\n" +
           "- has_watermark_or_stock_branding (bool)\n" +
           "- has_screenshot_ui (bool)\n" +
@@ -59,6 +63,7 @@ export async function stageWasteVerification(env: Env, reportId: string) {
 
   const metadata = {
     waste_category: result.waste_category,
+    suggested_severity: result.suggested_severity,
     ai_quality_score: result.ai_quality_score,
     contamination_at_source: result.contamination_at_source,
     contamination_feedback: result.contamination_feedback,
@@ -94,7 +99,10 @@ export async function stageWasteVerification(env: Env, reportId: string) {
   if (result.ai_quality_score >= 0.6 && result.waste_category) {
     const { error: updErr } = await supabaseAdmin
       .from("reports")
-      .update({ category: result.waste_category })
+      .update({
+        category: result.waste_category,
+        severity: result.suggested_severity
+      })
       .eq("id", reportId);
     if (updErr) throw updErr;
   }
