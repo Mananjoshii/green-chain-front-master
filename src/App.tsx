@@ -20,7 +20,14 @@ import Rewards from "@/pages/Rewards";
 import Analytics from "@/pages/Analytics";
 import NotFound from "@/pages/NotFound";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+    },
+  },
+});
 
 const App = () => (
   <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>

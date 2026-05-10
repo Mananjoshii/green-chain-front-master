@@ -107,14 +107,31 @@ export function useCitizenStats() {
     queryFn: async () => {
       const { data: reports, error } = await supabase
         .from("reports")
-        .select("status, token_reward")
+        .select("status, token_reward, category, severity")
         .eq("user_id", user!.id);
       if (error) throw error;
 
       const total = reports.length;
       const resolvedReports = reports.filter((r) => r.status === "resolved");
       const tokens = resolvedReports.reduce((sum, r) => sum + (Number(r.token_reward) || 0), 0);
-      return { totalReports: total, resolvedReports: resolvedReports.length, tokensEarned: tokens };
+      
+      const categoryCounts = reports.reduce((acc, r) => {
+        acc[r.category] = (acc[r.category] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      const severityCounts = reports.reduce((acc, r) => {
+        acc[r.severity] = (acc[r.severity] || 0) + 1;
+        return acc;
+      }, {} as Record<string, number>);
+
+      return { 
+        totalReports: total, 
+        resolvedReports: resolvedReports.length, 
+        tokensEarned: tokens,
+        categoryCounts,
+        severityCounts
+      };
     },
   });
 }
