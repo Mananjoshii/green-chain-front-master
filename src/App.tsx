@@ -15,6 +15,7 @@ import ReportCreate from "@/pages/ReportCreate";
 import MyReports from "@/pages/MyReports";
 import ReportDetail from "@/pages/ReportDetail";
 import MunicipalDashboard from "@/pages/MunicipalDashboard";
+import Hotspots from "@/pages/Hotspots";
 
 import Rewards from "@/pages/Rewards";
 import Analytics from "@/pages/Analytics";
@@ -47,6 +48,7 @@ const App = () => (
                 <Route path="/report/new" element={<ReportCreate />} />
                 <Route path="/reports" element={<MyReports />} />
                 <Route path="/reports/:id" element={<ReportDetail />} />
+                <Route path="/hotspots" element={<Hotspots />} />
                 <Route path="/rewards" element={<Rewards />} />
               </Route>
               <Route element={<ProtectedRoute roles={["municipal_officer", "admin"]}><AppLayout /></ProtectedRoute>}>

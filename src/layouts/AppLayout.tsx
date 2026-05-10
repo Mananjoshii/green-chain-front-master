@@ -31,6 +31,7 @@ const AppLayout = () => {
         { to: "/dashboard", label: "Dashboard" },
         { to: "/report/new", label: "Report Waste" },
         { to: "/reports", label: "My Reports" },
+        { to: "/hotspots", label: "Hotspots" },
         { to: "/rewards", label: "Rewards" },
         ...(isAdmin ? [{ to: "/municipal", label: "Municipal" }, { to: "/analytics", label: "Analytics" }] : []),
       ];
