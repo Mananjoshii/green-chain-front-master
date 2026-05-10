@@ -187,9 +187,11 @@ const MunicipalDashboard = () => {
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent>
-                                {Constants.public.Enums.report_status.map((s) => (
-                                  <SelectItem key={s} value={s} className="capitalize">{s.replace("_", " ")}</SelectItem>
-                                ))}
+                                {Constants.public.Enums.report_status
+                                  .filter(s => s !== "resolved" || r.status === "resolved")
+                                  .map((s) => (
+                                    <SelectItem key={s} value={s} className="capitalize">{s.replace("_", " ")}</SelectItem>
+                                  ))}
                               </SelectContent>
                             </Select>
                           </TableCell>
