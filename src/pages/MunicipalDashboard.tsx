@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useMunicipalReports, useMunicipalResolveReport, useUpdateReportStatus } from "@/hooks/useReports";
+import { useMunicipalReports, useMunicipalResolveReport, useUpdateReportStatus, useUpdateReportAdmin } from "@/hooks/useReports";
 import { useHotspots } from "@/hooks/useHotspots";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AnimatedPage, staggerContainer, fadeInUp } from "@/components/AnimatedPage";
 import { StatCard, GlassCard } from "@/components/GlassCard";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { SEVERITY_COLORS, STATUS_COLORS } from "@/types";
 import type { ReportStatus, SeverityLevel } from "@/types";
 import { Constants } from "@/integrations/supabase/types";
@@ -35,6 +36,7 @@ const MunicipalDashboard = () => {
   const { data: reports, isLoading } = useMunicipalReports(statusFilter === "all" ? undefined : statusFilter);
   const { data: hotspots, isLoading: hotspotsLoading } = useHotspots();
   const updateStatus = useUpdateReportStatus();
+  const updateAdmin = useUpdateReportAdmin();
   const resolveReport = useMunicipalResolveReport();
   const { toast } = useToast();
   const mapRef = useRef<L.Map | null>(null);
@@ -60,6 +62,15 @@ const MunicipalDashboard = () => {
         await updateStatus.mutateAsync({ id, status });
         toast({ title: `Report ${status.replace("_", " ")}` });
       }
+    } catch (err: any) {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    }
+  };
+
+  const handleAdminUpdate = async (id: string, updates: { status?: ReportStatus; severity?: SeverityLevel }) => {
+    try {
+      await updateAdmin.mutateAsync({ id, updates });
+      toast({ title: "Report successfully updated." });
     } catch (err: any) {
       toast({ title: "Error", description: err.message, variant: "destructive" });
     }
@@ -127,40 +138,79 @@ const MunicipalDashboard = () => {
           <Card className="glass overflow-hidden">
             <CardContent className="p-0">
               {isLoading ? (
-                <div className="space-y-3 p-6">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-20 w-full" />)}</div>
+                <div className="space-y-3 p-6">{[1, 2, 3].map((i) => <Skeleton key={i} className="h-12 w-full" />)}</div>
               ) : !filteredReports.length ? (
                 <p className="p-12 text-center text-muted-foreground">No reports match your filters.</p>
               ) : (
-                <motion.div variants={staggerContainer} initial="initial" animate="animate" className="divide-y">
-                  {filteredReports.map((r) => (
-                    <motion.div key={r.id} variants={fadeInUp} className="flex flex-col gap-3 p-4 transition-colors hover:bg-muted/30 sm:flex-row sm:items-center sm:justify-between">
-                      <Link to={`/reports/${r.id}`} className="flex-1 space-y-1">
-                        <p className="font-medium leading-tight">{r.location_address}</p>
-                        <p className="text-sm text-muted-foreground">{r.description.slice(0, 80)}{r.description.length > 80 ? "..." : ""}</p>
-                        <p className="text-xs text-muted-foreground">{format(new Date(r.created_at), "MMM d, yyyy · h:mm a")}</p>
-                      </Link>
-                      <div className="flex flex-wrap items-center gap-2">
-                        <Badge className={SEVERITY_COLORS[r.severity]}>{r.severity}</Badge>
-                        <Badge className={STATUS_COLORS[r.status]}>{r.status.replace("_", " ")}</Badge>
-                        {(r.status === "pending" || r.status === "verified") && (
-                          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                            <Button size="sm" variant="outline" onClick={() => handleAction(r.id, "assigned")} disabled={updateStatus.isPending}>Assign</Button>
-                          </motion.div>
-                        )}
-                        {(r.status === "assigned" || r.status === "in_progress") && (
-                          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                            <Button size="sm" onClick={() => handleAction(r.id, "resolved")} disabled={updateStatus.isPending || resolveReport.isPending}>Resolve</Button>
-                          </motion.div>
-                        )}
-                        {r.status !== "resolved" && r.status !== "rejected" && (
-                          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                            <Button size="sm" variant="destructive" onClick={() => handleAction(r.id, "rejected")} disabled={updateStatus.isPending}>Reject</Button>
-                          </motion.div>
-                        )}
-                      </div>
-                    </motion.div>
-                  ))}
-                </motion.div>
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Location & Details</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Severity Override</TableHead>
+                        <TableHead>Status Override</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredReports.map((r) => (
+                        <TableRow key={r.id} className="transition-colors hover:bg-muted/30">
+                          <TableCell className="max-w-[200px] lg:max-w-xs truncate">
+                            <Link to={`/reports/${r.id}`} className="hover:underline font-medium block truncate text-primary">{r.location_address}</Link>
+                            <span className="text-xs text-muted-foreground truncate block mt-0.5">{r.description}</span>
+                          </TableCell>
+                          <TableCell className="text-muted-foreground whitespace-nowrap text-xs">
+                            {format(new Date(r.created_at), "MMM d, yyyy")}
+                          </TableCell>
+                          <TableCell>
+                            <Select 
+                              value={r.severity} 
+                              onValueChange={(v) => handleAdminUpdate(r.id, { severity: v as SeverityLevel })}
+                            >
+                              <SelectTrigger className={`w-[130px] h-8 text-xs font-semibold ${SEVERITY_COLORS[r.severity]}`}>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Constants.public.Enums.severity_level.map((s) => (
+                                  <SelectItem key={s} value={s}>{s}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell>
+                            <Select 
+                              value={r.status} 
+                              onValueChange={(v) => handleAdminUpdate(r.id, { status: v as ReportStatus })}
+                            >
+                              <SelectTrigger className={`w-[140px] h-8 text-xs font-semibold ${STATUS_COLORS[r.status]}`}>
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {Constants.public.Enums.report_status.map((s) => (
+                                  <SelectItem key={s} value={s} className="capitalize">{s.replace("_", " ")}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                          <TableCell className="text-right whitespace-nowrap">
+                            {(r.status === "assigned" || r.status === "in_progress") ? (
+                              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="inline-block">
+                                <Button size="sm" onClick={() => handleAction(r.id, "resolved")} disabled={updateStatus.isPending || resolveReport.isPending || updateAdmin.isPending} className="h-8">
+                                  Resolve & Reward
+                                </Button>
+                              </motion.div>
+                            ) : (
+                              <Link to={`/reports/${r.id}`}>
+                                <Button size="sm" variant="outline" className="h-8">View</Button>
+                              </Link>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
             </CardContent>
           </Card>

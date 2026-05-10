@@ -163,6 +163,20 @@ export function useUpdateReportStatus() {
   });
 }
 
+export function useUpdateReportAdmin() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, updates }: { id: string; updates: { status?: ReportStatus; severity?: SeverityLevel } }) => {
+      const { error } = await supabase.from("reports").update(updates).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["municipal-reports"] });
+      queryClient.invalidateQueries({ queryKey: ["report"] });
+    },
+  });
+}
+
 export function useMunicipalResolveReport() {
   const queryClient = useQueryClient();
   return useMutation({
