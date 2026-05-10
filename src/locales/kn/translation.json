@@ -30,7 +30,7 @@
   },
   "dashboard": {
     "welcome": "ಸ್ವಾಗತ, {{name}}",
-    "subtitle": "ನಿಮ್ಮ ಎಕೋಚೈನ್ ಪ್ರಭಾವ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್",
+    "subtitle": "ನಿಮ್ಮ NammaWaste ಪ್ರಭಾವ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್",
     "report_waste_btn": "ತ್ಯಾಜ್ಯ ವರದಿ ಮಾಡಿ",
     "total_reports": "ಒಟ್ಟು ವರದಿಗಳು",
     "resolved": "ಬಗೆಹರಿಸಲಾಗಿದೆ",

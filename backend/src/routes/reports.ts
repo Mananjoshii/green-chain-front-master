@@ -29,7 +29,7 @@ export function reportsRouter(env: Env) {
           is_waste: z.boolean(),
           reason: z.string().optional()
         }),
-        system: "You are a pre-verification agent for EcoChain. Your task is to look at an image and determine if it contains ANY form of waste, garbage, trash, litter, or a messy environment that needs cleaning. If the image is completely irrelevant (like a clean room, a selfie, a cat, a screenshot, etc.) and contains NO waste, return is_waste: false and provide a reason. If there is ANY waste, return is_waste: true. Also check if it's clearly a fake/stock photo, if so, return is_waste: false and reason: 'fake/stock photo'.",
+        system: "You are a pre-verification agent for NammaWaste. Your task is to look at an image and determine if it contains ANY form of waste, garbage, trash, litter, or a messy environment that needs cleaning. If the image is completely irrelevant (like a clean room, a selfie, a cat, a screenshot, etc.) and contains NO waste, return is_waste: false and provide a reason. If there is ANY waste, return is_waste: true. Also check if it's clearly a fake/stock photo, if so, return is_waste: false and reason: 'fake/stock photo'.",
         user: [{ type: "image_url", image_url: { url: imageUrl } }]
       });
 

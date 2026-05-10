@@ -53,7 +53,7 @@ const Login = () => {
           <CardHeader className="text-center">
             <div className="mx-auto mb-2 flex items-center gap-2">
               <Leaf className="h-6 w-6 text-primary" />
-              <span className="text-xl font-bold eco-gradient-text" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>EcoChain</span>
+              <span className="text-xl font-bold eco-gradient-text" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>NammaWaste</span>
             </div>
             <CardTitle className="text-2xl">Welcome Back</CardTitle>
             <CardDescription>Sign in to your account</CardDescription>

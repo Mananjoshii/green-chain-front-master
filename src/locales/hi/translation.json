@@ -30,7 +30,7 @@
   },
   "dashboard": {
     "welcome": "नमस्ते, {{name}}",
-    "subtitle": "आपका इकोचेन इम्पैक्ट डैशबोर्ड",
+    "subtitle": "आपका NammaWaste इम्पैक्ट डैशबोर्ड",
     "report_waste_btn": "कचरा रिपोर्ट करें",
     "total_reports": "कुल रिपोर्ट्स",
     "resolved": "हल किया गया",

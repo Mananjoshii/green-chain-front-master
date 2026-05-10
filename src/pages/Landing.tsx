@@ -165,7 +165,7 @@ const Landing = () => {
         <div className="flex h-16 w-full items-center justify-between px-4 lg:px-6">
           <Link to="/" className="flex items-center gap-2 font-bold text-xl">
             <Leaf className="h-6 w-6 text-primary" />
-            <span className="eco-gradient-text" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>EcoChain</span>
+            <span className="eco-gradient-text" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>NammaWaste</span>
           </Link>
           <div className="flex items-center gap-3">
             <LanguageToggle />

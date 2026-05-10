@@ -55,7 +55,7 @@ const Dashboard = () => {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">{t('dashboard.welcome', { name: user?.fullName || "Citizen" })}</h1>
-          <p className="text-muted-foreground">{t('dashboard.subtitle', 'Your EcoChain impact dashboard')}</p>
+          <p className="text-muted-foreground">{t('dashboard.subtitle', 'Your NammaWaste impact dashboard')}</p>
         </div>
         <Link to="/report/new">
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>

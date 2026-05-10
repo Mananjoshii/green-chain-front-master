@@ -30,7 +30,7 @@
   },
   "dashboard": {
     "welcome": "Welcome, {{name}}",
-    "subtitle": "Your EcoChain impact dashboard",
+    "subtitle": "Your NammaWaste impact dashboard",
     "report_waste_btn": "Report Waste",
     "total_reports": "Total Reports",
     "resolved": "Resolved",

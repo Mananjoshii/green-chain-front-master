@@ -46,7 +46,7 @@ const AppLayout = () => {
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
           <Link to="/" className="flex items-center gap-2 font-bold text-xl">
             <Leaf className="h-6 w-6 text-primary" />
-            <span className="eco-gradient-text" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>EcoChain</span>
+            <span className="eco-gradient-text" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>NammaWaste</span>
           </Link>
 
           <nav className="hidden items-center gap-1 md:flex">

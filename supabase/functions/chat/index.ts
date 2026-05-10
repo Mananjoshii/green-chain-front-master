@@ -6,7 +6,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
-const SYSTEM_PROMPT = `You are EcoBot, a friendly AI assistant for the EcoChain waste management platform. You help citizens with:
+const SYSTEM_PROMPT = `You are EcoBot, a friendly AI assistant for the NammaWaste waste management platform. You help citizens with:
 
 1. **Waste Disposal Guidelines** — How to properly dispose of different waste types (organic, plastic, e-waste, construction, hazardous, mixed).
 2. **Recycling Best Practices** — What can be recycled, how to sort waste, local recycling tips.
