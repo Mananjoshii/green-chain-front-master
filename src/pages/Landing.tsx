@@ -5,6 +5,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageToggle } from "@/components/LanguageToggle";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/context/AuthContext";
 import { Leaf, MapPin, Search, AlertTriangle, AlertCircle, Info, ChevronRight, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -34,6 +36,7 @@ function zoneColor(avgSeverity: number) {
 }
 
 const Landing = () => {
+  const { t } = useTranslation();
   const { data: hotspots, isLoading } = useHotspots();
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -165,20 +168,21 @@ const Landing = () => {
             <span className="eco-gradient-text" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>EcoChain</span>
           </Link>
           <div className="flex items-center gap-3">
+            <LanguageToggle />
             <ThemeToggle />
             <Link to="/login" className="hidden sm:inline-flex">
-              <Button variant="outline" size="sm">Municipal Login</Button>
+              <Button variant="outline" size="sm">{t('nav.municipal_login', 'Municipal Login')}</Button>
             </Link>
             {!user && (
               <Link to="/signup">
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
-                  <Button size="sm">Get Started</Button>
+                  <Button size="sm">{t('nav.get_started', 'Get Started')}</Button>
                 </motion.div>
               </Link>
             )}
             {user && (
               <Link to="/dashboard">
-                <Button size="sm" variant="secondary">Dashboard</Button>
+                <Button size="sm" variant="secondary">{t('nav.dashboard', 'Dashboard')}</Button>
               </Link>
             )}
           </div>
@@ -195,7 +199,7 @@ const Landing = () => {
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
-                placeholder="Search by area name..." 
+                placeholder={t('landing.search_placeholder', "Search by area name...")}
                 className="pl-9 bg-background/50" 
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
@@ -208,7 +212,7 @@ const Landing = () => {
                 <svg viewBox="0 0 24 24" className="h-4 w-4 text-white fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
               </div>
               <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">
-                Report via WhatsApp! <span className="font-normal text-emerald-700 dark:text-emerald-400">Send a photo to get started instantly.</span>
+                {t('landing.report_whatsapp', "Report via WhatsApp!")} <span className="font-normal text-emerald-700 dark:text-emerald-400">{t('landing.report_whatsapp_desc', "Send a photo to get started instantly.")}</span>
               </p>
               <button className="absolute top-2 right-2 text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-200">
                 <X className="h-4 w-4" />
@@ -218,8 +222,8 @@ const Landing = () => {
 
           {/* List Header */}
           <div className="px-4 py-3 border-b bg-muted/20 flex items-center justify-between">
-            <h2 className="font-bold text-lg">Hotspots</h2>
-            <span className="text-sm text-muted-foreground">{hotspots?.length || 0} total</span>
+            <h2 className="font-bold text-lg">{t('landing.hotspots', 'Hotspots')}</h2>
+            <span className="text-sm text-muted-foreground">{hotspots?.length || 0} {t('landing.total', 'total')}</span>
           </div>
 
           {/* Scrollable List */}
@@ -231,7 +235,7 @@ const Landing = () => {
             ) : filteredHotspots.length === 0 ? (
               <div className="text-center py-10 text-muted-foreground flex flex-col items-center">
                 <AlertCircle className="h-10 w-10 mb-3 opacity-20" />
-                <p>No hotspots found matching your search.</p>
+                <p>{t('landing.no_hotspots', 'No hotspots found matching your search.')}</p>
               </div>
             ) : (
               filteredHotspots.map((h) => {
@@ -252,7 +256,7 @@ const Landing = () => {
                       <div className="flex items-center justify-between mb-1">
                         <h3 className="font-semibold text-sm truncate pr-2">{h.area_name}</h3>
                         <Badge variant="secondary" className="text-[10px] whitespace-nowrap bg-muted">
-                          Severity: {avgSeverity.toFixed(1)}
+                          {t('landing.severity', 'Severity')}: {avgSeverity.toFixed(1)}
                         </Badge>
                       </div>
                       <div className="flex items-center text-xs text-muted-foreground gap-1 mt-1">
@@ -261,7 +265,7 @@ const Landing = () => {
                       </div>
                       <div className="flex items-center justify-between mt-2 text-[10px] text-muted-foreground">
                         <div className="flex items-center gap-1">
-                          <Info className="h-3 w-3" /> Updated {new Date(h.last_updated).toLocaleDateString()}
+                          <Info className="h-3 w-3" /> {t('landing.updated', 'Updated')} {new Date(h.last_updated).toLocaleDateString()}
                         </div>
                         <ChevronRight className="h-4 w-4 opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
@@ -279,7 +283,7 @@ const Landing = () => {
               className="w-full gap-2 bg-destructive hover:bg-destructive/90 text-white font-bold h-14 text-lg"
               onClick={handleReportWaste}
             >
-              <AlertTriangle className="h-5 w-5" /> Report Waste
+              <AlertTriangle className="h-5 w-5" /> {t('landing.report_waste_btn', 'Report Waste')}
             </Button>
           </div>
         </div>
@@ -294,14 +298,14 @@ const Landing = () => {
           
           {/* Floating Map Legend */}
           <div className="absolute bottom-6 left-6 z-[1000] bg-card/90 backdrop-blur-md border shadow-lg rounded-xl p-4 text-sm max-w-[200px]">
-            <div className="font-bold mb-2">Hotspot Severity</div>
+            <div className="font-bold mb-2">{t('landing.hotspot_severity', 'Hotspot Severity')}</div>
             <div className="space-y-2">
-              <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-[#ef4444]"></span><span>High (≥ 3.2)</span></div>
-              <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-[#f97316]"></span><span>Elevated (≥ 2.4)</span></div>
-              <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-[#eab308]"></span><span>Moderate (≥ 1.6)</span></div>
-              <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-[#22c55e]"></span><span>Low (&lt; 1.6)</span></div>
+              <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-[#ef4444]"></span><span>{t('landing.high', 'High')} (≥ 3.2)</span></div>
+              <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-[#f97316]"></span><span>{t('landing.elevated', 'Elevated')} (≥ 2.4)</span></div>
+              <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-[#eab308]"></span><span>{t('landing.moderate', 'Moderate')} (≥ 1.6)</span></div>
+              <div className="flex items-center gap-2"><span className="w-3 h-3 rounded-full bg-[#22c55e]"></span><span>{t('landing.low', 'Low')} (&lt; 1.6)</span></div>
             </div>
-            <div className="mt-3 text-xs text-muted-foreground pt-2 border-t">Numbers indicate total reports</div>
+            <div className="mt-3 text-xs text-muted-foreground pt-2 border-t">{t('landing.reports_indicator', 'Numbers indicate total reports')}</div>
           </div>
         </div>
 

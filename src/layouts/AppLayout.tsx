@@ -2,6 +2,8 @@ import { Link, Outlet, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Chatbot from "@/components/Chatbot";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageToggle } from "@/components/LanguageToggle";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
 import {
@@ -16,6 +18,8 @@ const AppLayout = () => {
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  const { t } = useTranslation();
+
   const handleSignOut = async () => { await signOut(); navigate("/"); };
 
   const initials = user?.fullName ? user.fullName.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2) : "U";
@@ -24,16 +28,16 @@ const AppLayout = () => {
   const isCityPlanner = hasRole("city_planner");
 
   const navLinks = isMunicipalOfficer && !isAdmin
-    ? [{ to: "/municipal", label: "Municipal Dashboard" }]
+    ? [{ to: "/municipal", label: t('nav.municipal', 'Municipal Dashboard') }]
     : isCityPlanner && !isAdmin
-    ? [{ to: "/analytics", label: "Analytics" }]
+    ? [{ to: "/analytics", label: t('nav.analytics', 'Analytics') }]
     : [
-        { to: "/dashboard", label: "Dashboard" },
-        { to: "/report/new", label: "Report Waste" },
-        { to: "/reports", label: "My Reports" },
-        { to: "/hotspots", label: "Hotspots" },
-        { to: "/rewards", label: "Rewards" },
-        ...(isAdmin ? [{ to: "/municipal", label: "Municipal" }, { to: "/analytics", label: "Analytics" }] : []),
+        { to: "/dashboard", label: t('nav.dashboard', 'Dashboard') },
+        { to: "/report/new", label: t('nav.report_waste', 'Report Waste') },
+        { to: "/reports", label: t('nav.my_reports', 'My Reports') },
+        { to: "/hotspots", label: t('nav.hotspots', 'Hotspots') },
+        { to: "/rewards", label: t('nav.rewards', 'Rewards') },
+        ...(isAdmin ? [{ to: "/municipal", label: t('nav.municipal', 'Municipal') }, { to: "/analytics", label: t('nav.analytics', 'Analytics') }] : []),
       ];
 
   return (
@@ -56,6 +60,7 @@ const AppLayout = () => {
           </nav>
 
           <div className="flex items-center gap-1">
+            <LanguageToggle />
             <ThemeToggle />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -69,7 +74,7 @@ const AppLayout = () => {
                 <div className="px-2 py-1.5 text-sm font-medium">{user?.fullName || user?.email}</div>
                 <div className="px-2 pb-1.5 text-xs text-muted-foreground">{user?.roles.join(", ")}</div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut}>Sign Out</DropdownMenuItem>
+                <DropdownMenuItem onClick={handleSignOut}>{t('nav.sign_out', 'Sign Out')}</DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
 

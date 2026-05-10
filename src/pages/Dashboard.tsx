@@ -15,18 +15,20 @@ import {
   BarChart, Bar
 } from "recharts";
 import { format } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 const Dashboard = () => {
   const { user } = useAuth();
   const { data: stats, isLoading: statsLoading } = useCitizenStats();
   const { data: transactions, isLoading: txLoading } = useTokenTransactions();
+  const { t } = useTranslation();
 
   // Derived environmental metrics
   const pendingReports = Math.max(0, (stats?.totalReports || 0) - (stats?.resolvedReports || 0));
 
   const pieData = [
-    { name: "Resolved", value: stats?.resolvedReports || 0, color: "#10b981" },
-    { name: "Pending", value: pendingReports, color: "#f59e0b" },
+    { name: t('dashboard.resolved', 'Resolved'), value: stats?.resolvedReports || 0, color: "#10b981" },
+    { name: t('dashboard.pending', 'Pending'), value: pendingReports, color: "#f59e0b" },
   ];
 
   // Process transactions for Area chart
@@ -39,9 +41,9 @@ const Dashboard = () => {
     }));
 
   const statCards = [
-    { label: "Total Reports", value: stats?.totalReports ?? 0, icon: FileText, iconBg: "bg-primary/10", iconColor: "text-primary" },
-    { label: "Resolved", value: stats?.resolvedReports ?? 0, icon: CheckCircle2, iconBg: "bg-emerald-100", iconColor: "text-emerald-600" },
-    { label: "Tokens Earned", value: stats?.tokensEarned ?? 0, icon: Coins, iconBg: "bg-amber-100", iconColor: "text-amber-600" },
+    { label: t('dashboard.total_reports', 'Total Reports'), value: stats?.totalReports ?? 0, icon: FileText, iconBg: "bg-primary/10", iconColor: "text-primary" },
+    { label: t('dashboard.resolved', 'Resolved'), value: stats?.resolvedReports ?? 0, icon: CheckCircle2, iconBg: "bg-emerald-100", iconColor: "text-emerald-600" },
+    { label: t('dashboard.tokens_earned', 'Tokens Earned'), value: stats?.tokensEarned ?? 0, icon: Coins, iconBg: "bg-amber-100", iconColor: "text-amber-600" },
   ];
 
   const categoryData = Object.entries(stats?.categoryCounts || {})
@@ -52,12 +54,12 @@ const Dashboard = () => {
     <AnimatedPage className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Welcome, {user?.fullName || "Citizen"}</h1>
-          <p className="text-muted-foreground">Your EcoChain impact dashboard</p>
+          <h1 className="text-3xl font-bold">{t('dashboard.welcome', { name: user?.fullName || "Citizen" })}</h1>
+          <p className="text-muted-foreground">{t('dashboard.subtitle', 'Your EcoChain impact dashboard')}</p>
         </div>
         <Link to="/report/new">
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
-            <Button className="gap-2 shadow-md"><Plus className="h-4 w-4" /> Report Waste</Button>
+            <Button className="gap-2 shadow-md"><Plus className="h-4 w-4" /> {t('dashboard.report_waste_btn', 'Report Waste')}</Button>
           </motion.div>
         </Link>
       </div>
@@ -82,13 +84,13 @@ const Dashboard = () => {
         <div className="md:col-span-2 space-y-6">
           <Card className="glass border-white/40 dark:border-white/10 shadow-lg">
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-semibold text-muted-foreground">Reports by Category</CardTitle>
+              <CardTitle className="text-lg font-semibold text-muted-foreground">{t('dashboard.reports_by_category', 'Reports by Category')}</CardTitle>
             </CardHeader>
             <CardContent className="h-[200px]">
               {statsLoading ? (
                 <Skeleton className="h-full w-full rounded-2xl" />
               ) : categoryData.length === 0 ? (
-                <div className="flex h-full items-center justify-center text-muted-foreground">No reports yet.</div>
+                <div className="flex h-full items-center justify-center text-muted-foreground">{t('dashboard.no_reports', 'No reports yet.')}</div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={categoryData} layout="vertical" margin={{ top: 0, right: 30, left: 0, bottom: 0 }}>
@@ -104,7 +106,7 @@ const Dashboard = () => {
 
           <Card className="glass border-white/40 dark:border-white/10 shadow-lg">
             <CardHeader className="pb-2">
-              <CardTitle className="text-lg font-semibold text-muted-foreground">Report Resolution Rate</CardTitle>
+              <CardTitle className="text-lg font-semibold text-muted-foreground">{t('dashboard.report_resolution_rate', 'Report Resolution Rate')}</CardTitle>
             </CardHeader>
             <CardContent className="h-[250px] flex flex-col items-center justify-center relative">
               {statsLoading ? (
@@ -112,7 +114,7 @@ const Dashboard = () => {
               ) : stats?.totalReports === 0 ? (
                 <div className="text-center text-muted-foreground">
                   <PieChart className="mx-auto mb-2 opacity-20" size={48} />
-                  <p>No reports submitted yet.</p>
+                  <p>{t('dashboard.no_reports_submitted', 'No reports submitted yet.')}</p>
                 </div>
               ) : (
                 <ResponsiveContainer width="100%" height="100%">
@@ -129,7 +131,7 @@ const Dashboard = () => {
               {!statsLoading && stats?.totalReports !== 0 && (
                 <div className="absolute inset-0 flex items-center justify-center flex-col pointer-events-none mt-4">
                   <span className="text-2xl font-bold">{Math.round(((stats?.resolvedReports || 0) / (stats?.totalReports || 1)) * 100)}%</span>
-                  <span className="text-xs text-muted-foreground">Resolved</span>
+                  <span className="text-xs text-muted-foreground">{t('dashboard.resolved', 'Resolved')}</span>
                 </div>
               )}
             </CardContent>
@@ -139,7 +141,7 @@ const Dashboard = () => {
         {/* Right Column: Area Chart */}
         <Card className="glass border-white/40 dark:border-white/10 shadow-lg md:col-span-3">
           <CardHeader>
-            <CardTitle className="text-lg font-semibold text-muted-foreground">Token Earnings Over Time</CardTitle>
+            <CardTitle className="text-lg font-semibold text-muted-foreground">{t('dashboard.token_earnings', 'Token Earnings Over Time')}</CardTitle>
           </CardHeader>
           <CardContent className="h-[350px] pt-4">
             {txLoading ? (
@@ -147,9 +149,9 @@ const Dashboard = () => {
             ) : chartData.length === 0 ? (
               <div className="flex h-full flex-col items-center justify-center text-muted-foreground space-y-4">
                 <Coins className="h-12 w-12 opacity-20" />
-                <p>No earnings history available.</p>
+                <p>{t('dashboard.no_earnings', 'No earnings history available.')}</p>
                 <Link to="/report/new">
-                  <Button variant="outline" size="sm" className="mt-2 text-primary border-primary/20">Submit a report to earn tokens</Button>
+                  <Button variant="outline" size="sm" className="mt-2 text-primary border-primary/20">{t('dashboard.submit_to_earn', 'Submit a report to earn tokens')}</Button>
                 </Link>
               </div>
             ) : (

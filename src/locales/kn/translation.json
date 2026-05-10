@@ -1,0 +1,47 @@
+{
+  "nav": {
+    "dashboard": "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್",
+    "report_waste": "ತ್ಯಾಜ್ಯ ವರದಿ ಮಾಡಿ",
+    "my_reports": "ನನ್ನ ವರದಿಗಳು",
+    "hotspots": "ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳು",
+    "rewards": "ಬಹುಮಾನಗಳು",
+    "municipal": "ಪುರಸಭೆ",
+    "analytics": "ವಿಶ್ಲೇಷಣೆ",
+    "municipal_login": "ಪುರಸಭೆ ಲಾಗಿನ್",
+    "get_started": "ಪ್ರಾರಂಭಿಸಿ",
+    "sign_out": "ಸೈನ್ ಔಟ್"
+  },
+  "landing": {
+    "search_placeholder": "ಪ್ರದೇಶದ ಹೆಸರಿನಿಂದ ಹುಡುಕಿ...",
+    "report_whatsapp": "WhatsApp ಮೂಲಕ ವರದಿ ಮಾಡಿ!",
+    "report_whatsapp_desc": "ತಕ್ಷಣ ಪ್ರಾರಂಭಿಸಲು ಫೋಟೋ ಕಳುಹಿಸಿ.",
+    "hotspots": "ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳು",
+    "total": "ಒಟ್ಟು",
+    "no_hotspots": "ನಿಮ್ಮ ಹುಡುಕಾಟಕ್ಕೆ ಹೊಂದಿಕೆಯಾಗುವ ಯಾವುದೇ ಹಾಟ್‌ಸ್ಪಾಟ್‌ಗಳು ಕಂಡುಬಂದಿಲ್ಲ.",
+    "severity": "ತೀವ್ರತೆ",
+    "updated": "ನವೀಕರಿಸಲಾಗಿದೆ",
+    "report_waste_btn": "ತ್ಯಾಜ್ಯ ವರದಿ ಮಾಡಿ",
+    "hotspot_severity": "ಹಾಟ್‌ಸ್ಪಾಟ್ ತೀವ್ರತೆ",
+    "high": "ಹೆಚ್ಚು",
+    "elevated": "ಏರಿಕೆ",
+    "moderate": "ಮಧ್ಯಮ",
+    "low": "ಕಡಿಮೆ",
+    "reports_indicator": "ಸಂಖ್ಯೆಗಳು ಒಟ್ಟು ವರದಿಗಳನ್ನು ಸೂಚಿಸುತ್ತವೆ"
+  },
+  "dashboard": {
+    "welcome": "ಸ್ವಾಗತ, {{name}}",
+    "subtitle": "ನಿಮ್ಮ ಎಕೋಚೈನ್ ಪ್ರಭಾವ ಡ್ಯಾಶ್‌ಬೋರ್ಡ್",
+    "report_waste_btn": "ತ್ಯಾಜ್ಯ ವರದಿ ಮಾಡಿ",
+    "total_reports": "ಒಟ್ಟು ವರದಿಗಳು",
+    "resolved": "ಬಗೆಹರಿಸಲಾಗಿದೆ",
+    "tokens_earned": "ಗಳಿಸಿದ ಟೋಕನ್‌ಗಳು",
+    "reports_by_category": "ವರ್ಗದ ಪ್ರಕಾರ ವರದಿಗಳು",
+    "no_reports": "ಇನ್ನೂ ಯಾವುದೇ ವರದಿಗಳಿಲ್ಲ.",
+    "report_resolution_rate": "ವರದಿ ಪರಿಹಾರ ದರ",
+    "no_reports_submitted": "ಇನ್ನೂ ಯಾವುದೇ ವರದಿಗಳನ್ನು ಸಲ್ಲಿಸಲಾಗಿಲ್ಲ.",
+    "token_earnings": "ಕಾಲಾನಂತರದಲ್ಲಿ ಟೋಕನ್ ಗಳಿಕೆ",
+    "no_earnings": "ಯಾವುದೇ ಗಳಿಕೆ ಇತಿಹಾಸ ಲಭ್ಯವಿಲ್ಲ.",
+    "submit_to_earn": "ಟೋಕನ್‌ಗಳನ್ನು ಗಳಿಸಲು ವರದಿಯನ್ನು ಸಲ್ಲಿಸಿ",
+    "pending": "ಬಾಕಿ ಉಳಿದಿದೆ"
+  }
+}

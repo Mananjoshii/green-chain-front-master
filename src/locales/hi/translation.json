@@ -1,0 +1,47 @@
+{
+  "nav": {
+    "dashboard": "डैशबोर्ड",
+    "report_waste": "कचरा रिपोर्ट करें",
+    "my_reports": "मेरी रिपोर्ट्स",
+    "hotspots": "हॉटस्पॉट",
+    "rewards": "इनाम",
+    "municipal": "नगरपालिका",
+    "analytics": "एनालिटिक्स",
+    "municipal_login": "नगरपालिका लॉगिन",
+    "get_started": "शुरू करें",
+    "sign_out": "साइन आउट"
+  },
+  "landing": {
+    "search_placeholder": "क्षेत्र के नाम से खोजें...",
+    "report_whatsapp": "WhatsApp के माध्यम से रिपोर्ट करें!",
+    "report_whatsapp_desc": "तुरंत शुरू करने के लिए एक फोटो भेजें।",
+    "hotspots": "हॉटस्पॉट",
+    "total": "कुल",
+    "no_hotspots": "आपकी खोज से मेल खाने वाले कोई हॉटस्पॉट नहीं मिले।",
+    "severity": "गंभीरता",
+    "updated": "अपडेट किया गया",
+    "report_waste_btn": "कचरा रिपोर्ट करें",
+    "hotspot_severity": "हॉटस्पॉट गंभीरता",
+    "high": "उच्च",
+    "elevated": "बढ़ी हुई",
+    "moderate": "मध्यम",
+    "low": "कम",
+    "reports_indicator": "संख्याएं कुल रिपोर्ट दर्शाती हैं"
+  },
+  "dashboard": {
+    "welcome": "नमस्ते, {{name}}",
+    "subtitle": "आपका इकोचेन इम्पैक्ट डैशबोर्ड",
+    "report_waste_btn": "कचरा रिपोर्ट करें",
+    "total_reports": "कुल रिपोर्ट्स",
+    "resolved": "हल किया गया",
+    "tokens_earned": "अर्जित टोकन",
+    "reports_by_category": "श्रेणी के अनुसार रिपोर्ट",
+    "no_reports": "अभी तक कोई रिपोर्ट नहीं।",
+    "report_resolution_rate": "रिपोर्ट समाधान दर",
+    "no_reports_submitted": "अभी तक कोई रिपोर्ट जमा नहीं की गई।",
+    "token_earnings": "समय के साथ टोकन कमाई",
+    "no_earnings": "कोई कमाई इतिहास उपलब्ध नहीं है।",
+    "submit_to_earn": "टोकन कमाने के लिए एक रिपोर्ट जमा करें",
+    "pending": "लंबित"
+  }
+}
