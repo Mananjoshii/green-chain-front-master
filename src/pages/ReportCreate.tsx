@@ -10,9 +10,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { AnimatedPage, fadeInUp } from "@/components/AnimatedPage";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Upload, MapPin, Image, Info, Camera, LocateFixed } from "lucide-react";
+import { Loader2, Upload, MapPin, Image, Info, Camera, LocateFixed, Trash2, X } from "lucide-react";
 import { Constants } from "@/integrations/supabase/types";
 
 const SEVERITY_PILLS = [
@@ -48,14 +49,13 @@ const ReportCreate = () => {
     };
   }, []);
 
-  useEffect(() => {
-    // When we already have a stream and the video element mounts, attach it.
-    if (useCamera && videoRef.current && streamRef.current) {
-      videoRef.current.srcObject = streamRef.current;
-      // Some browsers require an explicit play() call
-      void videoRef.current.play?.();
+  const handleVideoRef = (node: HTMLVideoElement | null) => {
+    videoRef.current = node;
+    if (node && streamRef.current) {
+      node.srcObject = streamRef.current;
+      node.play?.().catch(console.error);
     }
-  }, [useCamera]);
+  };
 
   const createReport = useCreateReport();
   const navigate = useNavigate();
@@ -133,6 +133,7 @@ const ReportCreate = () => {
       setImageFile(file);
       setImagePreview(canvas.toDataURL("image/jpeg"));
       stopCamera();
+      setUseCamera(false);
     }, "image/jpeg", 0.9);
   };
 
@@ -183,167 +184,191 @@ const ReportCreate = () => {
   };
 
   return (
-    <AnimatedPage className="mx-auto max-w-2xl">
-      <Card className="glass overflow-hidden">
-        <CardHeader>
-          <CardTitle className="text-2xl">Report Waste</CardTitle>
+    <AnimatedPage className="mx-auto max-w-4xl space-y-6">
+      <Card className="glass overflow-hidden border-white/40 dark:border-white/10 shadow-lg">
+        <CardHeader className="bg-muted/10 border-b pb-6 mb-6">
+          <CardTitle className="text-3xl font-bold tracking-tight">Report Waste</CardTitle>
+          <p className="text-muted-foreground">Help keep the community clean by reporting issues.</p>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-8">
             {/* Step 1: Image */}
-            <motion.div variants={fadeInUp} initial="initial" animate="animate" className="space-y-3">
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <Camera className="h-4 w-4" /> Step 1 — Photo Evidence
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <Button
-                  type="button"
-                  variant={useCamera ? "default" : "outline"}
-                  size="sm"
-                  className="gap-1.5"
-                  onClick={async () => {
-                    if (!useCamera) {
-                      await startCamera();
-                    } else {
-                      setUseCamera(false);
-                      stopCamera();
-                    }
-                  }}
-                >
-                  <Camera className="h-4 w-4" />
-                  {useCamera ? "Use file upload" : "Use camera"}
-                </Button>
-                <span className="text-xs text-muted-foreground">
-                  {useCamera ? "Capture a photo with your camera" : "Or upload an existing image"}
-                </span>
+            <motion.div variants={fadeInUp} initial="initial" animate="animate" className="space-y-4">
+              <div className="flex items-center gap-2 text-lg font-semibold tracking-tight">
+                <div className="bg-primary/10 p-2 rounded-full"><Camera className="h-5 w-5 text-primary" /></div>
+                Step 1 — Photo Evidence
               </div>
 
-              {useCamera ? (
-                <div className="space-y-3">
-                  <div className="relative overflow-hidden rounded-xl border bg-black/60">
+              <div className="flex flex-col sm:flex-row gap-4 items-stretch">
+                {imagePreview ? (
+                  <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="w-full relative rounded-2xl overflow-hidden border bg-black/5 dark:bg-white/5 shadow-sm flex items-center justify-center min-h-[300px] group">
+                    <img src={imagePreview} alt="Preview" className="w-full h-auto max-h-[500px] object-contain rounded-2xl" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center backdrop-blur-sm">
+                       <Button type="button" variant="destructive" size="lg" className="gap-2 shadow-2xl scale-95 group-hover:scale-100 transition-transform duration-300 rounded-xl h-14 px-6 text-lg font-medium" onClick={() => { setImageFile(null); setImagePreview(""); }}>
+                          <Trash2 className="h-5 w-5" /> Remove Photo
+                       </Button>
+                    </div>
+                  </motion.div>
+                ) : (
+                  <>
+                    <label
+                      onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                      onDragLeave={() => setDragOver(false)}
+                      onDrop={handleDrop}
+                      className={`flex-1 relative flex min-h-[220px] cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed transition-all ${
+                        dragOver ? "border-primary bg-primary/5 scale-[1.01]" : "border-muted-foreground/30 bg-muted/20 hover:bg-muted/40 hover:border-primary/50"
+                      }`}
+                    >
+                      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center gap-4 text-muted-foreground p-6">
+                        <div className="p-5 bg-background rounded-full shadow-sm border border-muted"><Image className="h-10 w-10 text-primary/70" /></div>
+                        <div className="text-center">
+                          <span className="text-base font-medium text-foreground block">Click or drag & drop</span>
+                          <p className="text-sm text-muted-foreground mt-1">SVG, PNG, JPG or GIF</p>
+                        </div>
+                      </motion.div>
+                      <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+                    </label>
+                    
+                    <div className="flex flex-col gap-3 justify-center sm:w-48 shrink-0 relative">
+                      <div className="hidden sm:flex absolute left-0 -ml-[23px] top-1/2 -translate-y-1/2 bg-background p-1 text-xs text-muted-foreground uppercase font-semibold tracking-wider z-10 rounded-full">Or</div>
+                      <div className="sm:hidden text-xs text-center text-muted-foreground uppercase font-semibold tracking-wider my-1">Or</div>
+                      
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="gap-2 h-16 rounded-xl shadow-sm border-primary/20 bg-primary/5 hover:bg-primary/10 hover:text-primary transition-colors text-base"
+                        onClick={async () => {
+                          await startCamera();
+                        }}
+                      >
+                        <Camera className="h-6 w-6" />
+                        Open Camera
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* Camera Dialog */}
+              <Dialog open={useCamera} onOpenChange={(open) => {
+                if (!open) { setUseCamera(false); stopCamera(); }
+              }}>
+                <DialogContent className="sm:max-w-4xl w-screen h-screen sm:h-[80vh] max-w-none m-0 sm:m-auto rounded-none sm:rounded-2xl p-0 overflow-hidden bg-black border-none flex flex-col shadow-2xl [&>button]:hidden">
+                  <div className="absolute top-6 right-6 z-50">
+                    <Button variant="outline" size="icon" className="rounded-full bg-black/40 text-white hover:bg-black/60 border-none backdrop-blur-md shadow-lg" onClick={() => { setUseCamera(false); stopCamera(); }}>
+                      <X className="w-6 h-6" />
+                    </Button>
+                  </div>
+                  <div className="flex-1 relative bg-black flex items-center justify-center">
                     <video
-                      ref={videoRef}
+                      ref={handleVideoRef}
                       autoPlay
                       playsInline
-                      className="h-40 w-full object-cover"
+                      className="w-full h-full object-cover max-h-full"
                     />
+                    {!cameraActive && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/80 text-white">
+                        <Loader2 className="w-8 h-8 animate-spin" />
+                      </div>
+                    )}
                   </div>
-                  <div className="flex justify-end gap-2">
+                  <div className="absolute bottom-0 left-0 right-0 p-8 flex justify-center bg-gradient-to-t from-black/80 to-transparent">
                     <Button
                       type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={stopCamera}
-                      disabled={!cameraActive}
-                    >
-                      Stop camera
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
+                      size="lg"
+                      className="rounded-full h-20 w-20 bg-white hover:bg-gray-200 hover:scale-105 active:scale-95 transition-all duration-200 border-4 border-gray-400 p-0 shadow-2xl focus:ring-4 focus:ring-primary/50"
                       onClick={capturePhoto}
                       disabled={!cameraActive}
                     >
-                      Capture photo
+                      <span className="sr-only">Capture photo</span>
                     </Button>
                   </div>
-                </div>
-              ) : (
-                <label
-                  onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                  onDragLeave={() => setDragOver(false)}
-                  onDrop={handleDrop}
-                  className={`flex h-40 cursor-pointer items-center justify-center rounded-xl border-2 border-dashed transition-all ${
-                    dragOver ? "border-primary bg-primary/5 scale-[1.02]" : "border-input bg-muted/30 hover:bg-muted/50 hover:border-primary/50"
-                  }`}
-                >
-                  <AnimatePresence mode="wait">
-                    {imagePreview ? (
-                      <motion.img key="preview" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} src={imagePreview} alt="Preview" className="h-full w-full rounded-xl object-cover" />
-                    ) : (
-                      <motion.div key="placeholder" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center gap-2 text-muted-foreground">
-                        <Upload className="h-8 w-8" />
-                        <span className="text-sm">Drag & drop or click to upload</span>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                  <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
-                </label>
-              )}
+                </DialogContent>
+              </Dialog>
             </motion.div>
 
             {/* Step 2: Location */}
-            <motion.div variants={fadeInUp} initial="initial" animate="animate" className="space-y-3">
+            <motion.div variants={fadeInUp} initial="initial" animate="animate" className="space-y-4 pt-4 border-t border-border/50">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                  <MapPin className="h-4 w-4" /> Step 2 — Location
+                <div className="flex items-center gap-2 text-lg font-semibold tracking-tight">
+                  <div className="bg-primary/10 p-2 rounded-full"><MapPin className="h-5 w-5 text-primary" /></div>
+                  Step 2 — Location
                 </div>
-                <Button type="button" variant="outline" size="sm" onClick={fetchLocation} disabled={locLoading} className="gap-1.5 text-xs">
-                  {locLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <LocateFixed className="h-3.5 w-3.5" />}
+                <Button type="button" variant="outline" size="sm" onClick={fetchLocation} disabled={locLoading} className="gap-2 h-9 rounded-full px-4 hover:bg-primary/5 hover:text-primary transition-colors border-primary/20">
+                  {locLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LocateFixed className="h-4 w-4" />}
                   Auto-detect
                 </Button>
               </div>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input className="pl-9 transition-shadow focus:shadow-md focus:shadow-primary/10" required value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Street address or landmark" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <Label htmlFor="lat" className="text-xs">Latitude</Label>
-                  <Input id="lat" type="number" step="any" value={lat} onChange={(e) => setLat(e.target.value)} placeholder="e.g. 22.7196" className="transition-shadow focus:shadow-md focus:shadow-primary/10" />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-muted/20 p-5 rounded-2xl border border-border/50">
+                <div className="space-y-2 md:col-span-2">
+                  <Label className="text-sm font-medium">Street Address</Label>
+                  <div className="relative">
+                    <MapPin className="absolute left-3 top-3.5 h-5 w-5 text-muted-foreground/70" />
+                    <Input className="pl-10 h-12 text-base bg-background transition-shadow focus:shadow-md focus:shadow-primary/10 border-muted-foreground/20 rounded-xl" required value={address} onChange={(e) => setAddress(e.target.value)} placeholder="Enter street address or landmark" />
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <Label htmlFor="lng" className="text-xs">Longitude</Label>
-                  <Input id="lng" type="number" step="any" value={lng} onChange={(e) => setLng(e.target.value)} placeholder="e.g. 75.8577" className="transition-shadow focus:shadow-md focus:shadow-primary/10" />
+                <div className="space-y-2">
+                  <Label htmlFor="lat" className="text-sm font-medium">Latitude</Label>
+                  <Input id="lat" type="number" step="any" value={lat} onChange={(e) => setLat(e.target.value)} placeholder="e.g. 22.7196" className="h-11 bg-background transition-shadow focus:shadow-md focus:shadow-primary/10 border-muted-foreground/20 rounded-xl" />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lng" className="text-sm font-medium">Longitude</Label>
+                  <Input id="lng" type="number" step="any" value={lng} onChange={(e) => setLng(e.target.value)} placeholder="e.g. 75.8577" className="h-11 bg-background transition-shadow focus:shadow-md focus:shadow-primary/10 border-muted-foreground/20 rounded-xl" />
                 </div>
               </div>
             </motion.div>
 
             {/* Step 3: Details */}
-            <motion.div variants={fadeInUp} initial="initial" animate="animate" className="space-y-3">
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <Info className="h-4 w-4" /> Step 3 — Details
+            <motion.div variants={fadeInUp} initial="initial" animate="animate" className="space-y-5 pt-4 border-t border-border/50">
+              <div className="flex items-center gap-2 text-lg font-semibold tracking-tight">
+                <div className="bg-primary/10 p-2 rounded-full"><Info className="h-5 w-5 text-primary" /></div>
+                Step 3 — Details
               </div>
-              <div className="space-y-2">
-                <Label className="text-xs">Category</Label>
-                <Select value={category} onValueChange={setCategory}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {Constants.public.Enums.waste_category.map((c) => (
-                      <SelectItem key={c} value={c}>{c.replace("_", " ")}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs">Severity</Label>
-                <div className="flex flex-wrap gap-2">
-                  {SEVERITY_PILLS.map((s) => (
-                    <motion.button
-                      key={s.value}
-                      type="button"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                      onClick={() => setSeverity(s.value)}
-                      className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-all ${
-                        severity === s.value ? `${s.color} shadow-sm` : "border-input bg-background text-muted-foreground hover:bg-muted"
-                      }`}
-                    >
-                      {s.label}
-                    </motion.button>
-                  ))}
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-muted/20 p-5 rounded-2xl border border-border/50">
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">Category</Label>
+                  <Select value={category} onValueChange={setCategory}>
+                    <SelectTrigger className="h-11 bg-background border-muted-foreground/20 rounded-xl"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {Constants.public.Enums.waste_category.map((c) => (
+                        <SelectItem key={c} value={c} className="capitalize">{c.replace("_", " ")}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label className="text-xs">Description</Label>
-                <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Describe the waste issue..." rows={4} className="transition-shadow focus:shadow-md focus:shadow-primary/10" />
+                
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium">Severity Level</Label>
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {SEVERITY_PILLS.map((s) => (
+                      <motion.button
+                        key={s.value}
+                        type="button"
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setSeverity(s.value)}
+                        className={`rounded-xl border px-4 py-2 text-sm font-medium transition-all ${
+                          severity === s.value ? `${s.color} shadow-md border-transparent` : "border-muted-foreground/20 bg-background text-muted-foreground hover:bg-muted/80"
+                        }`}
+                      >
+                        {s.label}
+                      </motion.button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-3 md:col-span-2">
+                  <Label className="text-sm font-medium">Description</Label>
+                  <Textarea value={description} onChange={(e) => setDescription(e.target.value)} placeholder="Please provide any additional details about the waste issue..." rows={4} className="bg-background transition-shadow focus:shadow-md focus:shadow-primary/10 border-muted-foreground/20 rounded-xl resize-none p-3" />
+                </div>
               </div>
             </motion.div>
 
-            <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-              <Button type="submit" className="w-full" disabled={uploading}>
-                {uploading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Submit Report
+            <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.99 }} className="pt-6">
+              <Button type="submit" size="lg" className="w-full text-lg h-14 rounded-2xl shadow-lg hover:shadow-xl transition-all" disabled={uploading}>
+                {uploading ? <Loader2 className="mr-2 h-6 w-6 animate-spin" /> : <Upload className="mr-2 h-5 w-5" />}
+                {uploading ? "Submitting Report..." : "Submit Report"}
               </Button>
             </motion.div>
           </CardContent>

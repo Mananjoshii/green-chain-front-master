@@ -15,7 +15,7 @@ import ReportCreate from "@/pages/ReportCreate";
 import MyReports from "@/pages/MyReports";
 import ReportDetail from "@/pages/ReportDetail";
 import MunicipalDashboard from "@/pages/MunicipalDashboard";
-import Hotspots from "@/pages/Hotspots";
+
 import Rewards from "@/pages/Rewards";
 import Analytics from "@/pages/Analytics";
 import NotFound from "@/pages/NotFound";
@@ -34,9 +34,7 @@ const App = () => (
               <Route path="/" element={<Landing />} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
-              <Route path="/hotspots" element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-                <Route index element={<Hotspots />} />
-              </Route>
+
               <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/report/new" element={<ReportCreate />} />

@@ -26,12 +26,11 @@ const AppLayout = () => {
   const navLinks = isMunicipalOfficer && !isAdmin
     ? [{ to: "/municipal", label: "Municipal Dashboard" }]
     : isCityPlanner && !isAdmin
-    ? [{ to: "/analytics", label: "Analytics" }, { to: "/hotspots", label: "Hotspots" }]
+    ? [{ to: "/analytics", label: "Analytics" }]
     : [
         { to: "/dashboard", label: "Dashboard" },
         { to: "/report/new", label: "Report Waste" },
         { to: "/reports", label: "My Reports" },
-        { to: "/hotspots", label: "Hotspots" },
         { to: "/rewards", label: "Rewards" },
         ...(isAdmin ? [{ to: "/municipal", label: "Municipal" }, { to: "/analytics", label: "Analytics" }] : []),
       ];

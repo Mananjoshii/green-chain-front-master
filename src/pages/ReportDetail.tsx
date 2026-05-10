@@ -11,7 +11,7 @@ import { AnimatedPage, staggerContainer, fadeInUp } from "@/components/AnimatedP
 import { AGENT_LABELS, AGENT_ORDER, SEVERITY_COLORS, STATUS_COLORS } from "@/types";
 import type { AgentType, AgentStageStatus } from "@/types";
 import { format } from "date-fns";
-import { CheckCircle2, Clock, Loader2, XCircle, MapPin, Calendar, Play } from "lucide-react";
+import { CheckCircle2, Clock, Loader2, XCircle, MapPin, Calendar, Play, FileText, Tag } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { ResolutionUploadPanel } from "@/components/ResolutionUploadPanel";
@@ -79,18 +79,21 @@ const ReportDetail = () => {
   if (!report) return <p className="py-12 text-center text-muted-foreground">Report not found.</p>;
 
   return (
-    <AnimatedPage className="mx-auto max-w-3xl space-y-6">
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Report Details</h1>
-          <p className="text-sm text-muted-foreground">ID: {report.id.slice(0, 8)}...</p>
+    <AnimatedPage className="mx-auto max-w-5xl space-y-8">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 bg-card/40 p-6 rounded-2xl border shadow-sm backdrop-blur-sm relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 rounded-full blur-3xl -z-10 pointer-events-none transform translate-x-1/2 -translate-y-1/2"></div>
+        <div className="z-10">
+          <h1 className="text-3xl font-bold tracking-tight">Report Details</h1>
+          <p className="text-muted-foreground flex items-center gap-2 mt-2">
+            <span className="font-mono text-xs bg-background border px-2 py-1 rounded-md shadow-sm">ID: {report.id}</span>
+          </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge className={SEVERITY_COLORS[report.severity]}>{report.severity}</Badge>
-          <Badge className={STATUS_COLORS[report.status] || "bg-gray-100 text-gray-800"}>{report.status.replace('_', ' ')}</Badge>
+        <div className="flex flex-wrap items-center gap-3 z-10">
+          <Badge className={`${SEVERITY_COLORS[report.severity]} px-3 py-1 text-sm shadow-sm`}>{report.severity}</Badge>
+          <Badge className={`${STATUS_COLORS[report.status] || "bg-gray-100 text-gray-800"} px-3 py-1 text-sm shadow-sm`}>{report.status.replace('_', ' ')}</Badge>
           {report.status === "pending" && (
-            <Button size="sm" onClick={runPipeline} disabled={processing} className="gap-1.5">
-              {processing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+            <Button onClick={runPipeline} disabled={processing} className="gap-2 shadow-md transition-all hover:-translate-y-0.5 ml-2">
+              {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4 fill-current" />}
               Run Pipeline
             </Button>
           )}
@@ -98,22 +101,64 @@ const ReportDetail = () => {
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <Card className="glass">
-          <CardHeader><CardTitle className="text-lg">Information</CardTitle></CardHeader>
-          <CardContent className="space-y-3 text-sm">
-            <div className="flex items-center gap-2"><MapPin className="h-4 w-4 text-muted-foreground" /><span>{report.location_address}</span></div>
-            {report.latitude && report.longitude && <p className="text-muted-foreground">({report.latitude}, {report.longitude})</p>}
-            <div className="flex items-center gap-2"><Calendar className="h-4 w-4 text-muted-foreground" /><span>{format(new Date(report.created_at), "PPpp")}</span></div>
-            <p><span className="font-medium">Category:</span> {report.category.replace("_", " ")}</p>
-            <p>{report.description}</p>
-            {report.token_reward ? <p className="font-medium text-amber-600">Reward: {report.token_reward} Green Tokens</p> : null}
+        <Card className="glass flex flex-col h-full border-white/40 dark:border-white/10 hover:shadow-lg transition-shadow duration-300">
+          <CardHeader className="pb-4 border-b bg-muted/20">
+            <CardTitle className="text-xl flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" /> Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6 pt-6">
+            <div className="space-y-5">
+               <div className="flex items-start gap-4">
+                 <div className="mt-0.5 bg-primary/10 p-2.5 rounded-full"><MapPin className="h-5 w-5 text-primary" /></div>
+                 <div>
+                   <p className="font-medium text-base">{report.location_address}</p>
+                   {report.latitude && report.longitude && (
+                     <p className="text-xs text-muted-foreground mt-1.5 font-mono bg-muted inline-block px-2 py-0.5 rounded">
+                       {report.latitude.toFixed(5)}, {report.longitude.toFixed(5)}
+                     </p>
+                   )}
+                 </div>
+               </div>
+               
+               <div className="flex items-center gap-4">
+                 <div className="bg-primary/10 p-2.5 rounded-full"><Calendar className="h-5 w-5 text-primary" /></div>
+                 <div>
+                   <p className="font-medium">{format(new Date(report.created_at), "PPP 'at' p")}</p>
+                 </div>
+               </div>
+
+               <div className="flex items-center gap-4">
+                 <div className="bg-primary/10 p-2.5 rounded-full"><Tag className="h-5 w-5 text-primary" /></div>
+                 <div>
+                   <p className="font-medium capitalize">{report.category.replace("_", " ")}</p>
+                   <p className="text-xs text-muted-foreground">Category</p>
+                 </div>
+               </div>
+            </div>
+
+            <div className="pt-5 border-t">
+              <h4 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wider">Description</h4>
+              <p className="text-sm leading-relaxed bg-muted/30 p-4 rounded-lg border border-white/20">{report.description}</p>
+            </div>
+
+            {report.token_reward ? (
+              <div className="pt-4 border-t flex items-center justify-between">
+                 <span className="font-semibold text-muted-foreground">Reward</span>
+                 <Badge variant="outline" className="text-amber-600 bg-amber-50 border-amber-200 text-base py-1 px-3 shadow-sm">
+                    +{report.token_reward} GT
+                 </Badge>
+              </div>
+            ) : null}
           </CardContent>
         </Card>
 
         {report.image_url && (
-          <Card className="glass overflow-hidden h-fit">
-            <CardContent className="p-0">
-              <img src={report.image_url} alt="Waste report" className="w-full object-cover" />
+          <Card className="glass overflow-hidden h-full flex flex-col hover:shadow-lg transition-all duration-300 group border-white/40 dark:border-white/10">
+            <CardHeader className="pb-4 border-b bg-muted/20 hidden md:block opacity-0 invisible h-0 p-0 m-0"></CardHeader>
+            <CardContent className="p-0 flex-grow relative bg-muted/20">
+              <img src={report.image_url} alt="Waste report" className="w-full h-full object-cover min-h-[300px] md:min-h-[400px]" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
             </CardContent>
           </Card>
         )}
@@ -147,9 +192,13 @@ const ReportDetail = () => {
       )}
 
       {/* AI Agent Pipeline */}
-      <Card className="glass">
-        <CardHeader><CardTitle className="text-lg">AI Agent Pipeline</CardTitle></CardHeader>
-        <CardContent>
+      <Card className="glass border-white/40 dark:border-white/10 hover:shadow-lg transition-shadow duration-300 mt-8">
+        <CardHeader className="pb-4 border-b bg-muted/10">
+          <CardTitle className="text-xl flex items-center gap-2">
+            <Loader2 className="h-5 w-5 text-primary" /> AI Agent Pipeline
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-6">
           <motion.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-0">
             {AGENT_ORDER.map((agent, i) => {
               const event = eventMap.get(agent);
