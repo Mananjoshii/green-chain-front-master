@@ -6,6 +6,7 @@ import { z } from "zod";
 import type { Env } from "../env.js";
 import { getAdminSupabase } from "../supabase/clients.js";
 import { processReport } from "../pipeline/processReport.js";
+import { getStructuredJson } from "../ai/openaiCompatible.js";
 import { requireRoleAtLeastCitizen } from "../middleware/requireRole.js";
 
 const upload = multer({
@@ -16,6 +17,29 @@ const upload = multer({
 export function reportsRouter(env: Env) {
   const router = Router();
   const supabaseAdmin = getAdminSupabase(env);
+
+  router.post("/verify-image", requireRoleAtLeastCitizen, async (req, res, next) => {
+    try {
+      const Body = z.object({ imageUrl: z.string().url() });
+      const { imageUrl } = Body.parse(req.body);
+
+      const result = await getStructuredJson(env, {
+        model: env.AI_VISION_MODEL,
+        schema: z.object({
+          is_waste: z.boolean(),
+          reason: z.string().optional()
+        }),
+        system: "You are a pre-verification agent for EcoChain. Your task is to look at an image and determine if it contains ANY form of waste, garbage, trash, litter, or a messy environment that needs cleaning. If the image is completely irrelevant (like a clean room, a selfie, a cat, a screenshot, etc.) and contains NO waste, return is_waste: false and provide a reason. If there is ANY waste, return is_waste: true. Also check if it's clearly a fake/stock photo, if so, return is_waste: false and reason: 'fake/stock photo'.",
+        user: [{ type: "image_url", image_url: { url: imageUrl } }]
+      });
+
+      return res.status(200).json(result);
+    } catch (err) {
+      console.error(`[API] /reports/verify-image failed with error:`, err);
+      next(err);
+    }
+  });
+
 
   router.post("/upload", requireRoleAtLeastCitizen, upload.single("file"), async (req, res, next) => {
     try {

@@ -147,17 +147,43 @@ const ReportCreate = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!address.trim()) { toast({ title: "Location address is required", variant: "destructive" }); return; }
+    if (!imageFile) { toast({ title: "Photo evidence is required", variant: "destructive" }); return; }
+    
     setUploading(true);
     try {
       let imageUrl: string | undefined;
+      let storagePath: string | undefined;
+      
       if (imageFile) {
         const ext = imageFile.name.split(".").pop();
-        const path = `${crypto.randomUUID()}.${ext}`;
-        const { error: uploadError } = await supabase.storage.from("report-images").upload(path, imageFile);
+        storagePath = `${crypto.randomUUID()}.${ext}`;
+        const { error: uploadError } = await supabase.storage.from("report-images").upload(storagePath, imageFile);
         if (uploadError) throw uploadError;
-        const { data: urlData } = supabase.storage.from("report-images").getPublicUrl(path);
+        const { data: urlData } = supabase.storage.from("report-images").getPublicUrl(storagePath);
         imageUrl = urlData.publicUrl;
       }
+      
+      // 0th Layer Verification
+      if (imageUrl) {
+        toast({ title: "Analyzing image...", description: "Verifying photo validity." });
+        const verifyResult = await apiClient.post<{ is_waste: boolean; reason?: string }>("/reports/verify-image", { imageUrl });
+        
+        if (!verifyResult.is_waste) {
+          // Reject and cleanup
+          if (storagePath) {
+            await supabase.storage.from("report-images").remove([storagePath]);
+          }
+          toast({ 
+            title: "Photo Rejected", 
+            description: verifyResult.reason || "The uploaded image does not appear to contain valid waste.", 
+            variant: "destructive",
+            duration: 5000
+          });
+          setUploading(false);
+          return; // Stop submission
+        }
+      }
+
       const report = await createReport.mutateAsync({
         image_url: imageUrl, location_address: address,
         latitude: lat ? parseFloat(lat) : undefined, longitude: lng ? parseFloat(lng) : undefined,
