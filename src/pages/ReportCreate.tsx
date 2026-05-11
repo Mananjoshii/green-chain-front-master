@@ -177,7 +177,7 @@ const ReportCreate = () => {
             title: "Photo Rejected",
             description: verifyResult.reason || "The uploaded image does not appear to contain valid waste.",
             variant: "destructive",
-            duration: 0
+            duration: Infinity
           });
           setUploading(false);
           return; // Stop submission
