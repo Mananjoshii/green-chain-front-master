@@ -148,12 +148,12 @@ const ReportCreate = () => {
     e.preventDefault();
     if (!address.trim()) { toast({ title: "Location address is required", variant: "destructive" }); return; }
     if (!imageFile) { toast({ title: "Photo evidence is required", variant: "destructive" }); return; }
-    
+
     setUploading(true);
     try {
       let imageUrl: string | undefined;
       let storagePath: string | undefined;
-      
+
       if (imageFile) {
         const ext = imageFile.name.split(".").pop();
         storagePath = `${crypto.randomUUID()}.${ext}`;
@@ -162,22 +162,22 @@ const ReportCreate = () => {
         const { data: urlData } = supabase.storage.from("report-images").getPublicUrl(storagePath);
         imageUrl = urlData.publicUrl;
       }
-      
+
       // 0th Layer Verification
       if (imageUrl) {
         toast({ title: "Analyzing image...", description: "Verifying photo validity." });
         const verifyResult = await apiClient.post<{ is_waste: boolean; reason?: string }>("/reports/verify-image", { imageUrl });
-        
+
         if (!verifyResult.is_waste) {
           // Reject and cleanup
           if (storagePath) {
             await supabase.storage.from("report-images").remove([storagePath]);
           }
-          toast({ 
-            title: "Photo Rejected", 
-            description: verifyResult.reason || "The uploaded image does not appear to contain valid waste.", 
+          toast({
+            title: "Photo Rejected",
+            description: verifyResult.reason || "The uploaded image does not appear to contain valid waste.",
             variant: "destructive",
-            duration: 5000
+            duration: 0
           });
           setUploading(false);
           return; // Stop submission
@@ -230,9 +230,9 @@ const ReportCreate = () => {
                   <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} className="w-full relative rounded-2xl overflow-hidden border bg-black/5 dark:bg-white/5 shadow-sm flex items-center justify-center min-h-[300px] group">
                     <img src={imagePreview} alt="Preview" className="w-full h-auto max-h-[500px] object-contain rounded-2xl" />
                     <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center backdrop-blur-sm">
-                       <Button type="button" variant="destructive" size="lg" className="gap-2 shadow-2xl scale-95 group-hover:scale-100 transition-transform duration-300 rounded-xl h-14 px-6 text-lg font-medium" onClick={() => { setImageFile(null); setImagePreview(""); }}>
-                          <Trash2 className="h-5 w-5" /> Remove Photo
-                       </Button>
+                      <Button type="button" variant="destructive" size="lg" className="gap-2 shadow-2xl scale-95 group-hover:scale-100 transition-transform duration-300 rounded-xl h-14 px-6 text-lg font-medium" onClick={() => { setImageFile(null); setImagePreview(""); }}>
+                        <Trash2 className="h-5 w-5" /> Remove Photo
+                      </Button>
                     </div>
                   </motion.div>
                 ) : (
@@ -241,9 +241,8 @@ const ReportCreate = () => {
                       onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                       onDragLeave={() => setDragOver(false)}
                       onDrop={handleDrop}
-                      className={`flex-1 relative flex min-h-[220px] cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed transition-all ${
-                        dragOver ? "border-primary bg-primary/5 scale-[1.01]" : "border-muted-foreground/30 bg-muted/20 hover:bg-muted/40 hover:border-primary/50"
-                      }`}
+                      className={`flex-1 relative flex min-h-[220px] cursor-pointer items-center justify-center rounded-2xl border-2 border-dashed transition-all ${dragOver ? "border-primary bg-primary/5 scale-[1.01]" : "border-muted-foreground/30 bg-muted/20 hover:bg-muted/40 hover:border-primary/50"
+                        }`}
                     >
                       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex flex-col items-center gap-4 text-muted-foreground p-6">
                         <div className="p-5 bg-background rounded-full shadow-sm border border-muted"><Image className="h-10 w-10 text-primary/70" /></div>
@@ -254,11 +253,11 @@ const ReportCreate = () => {
                       </motion.div>
                       <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
                     </label>
-                    
+
                     <div className="flex flex-col gap-3 justify-center sm:w-48 shrink-0 relative">
                       <div className="hidden sm:flex absolute left-0 -ml-[23px] top-1/2 -translate-y-1/2 bg-background p-1 text-xs text-muted-foreground uppercase font-semibold tracking-wider z-10 rounded-full">Or</div>
                       <div className="sm:hidden text-xs text-center text-muted-foreground uppercase font-semibold tracking-wider my-1">Or</div>
-                      
+
                       <Button
                         type="button"
                         variant="outline"
@@ -350,7 +349,7 @@ const ReportCreate = () => {
                 <div className="bg-primary/10 p-2 rounded-full"><Info className="h-5 w-5 text-primary" /></div>
                 Step 3 — Details
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-muted/20 p-5 rounded-2xl border border-border/50">
                 <div className="space-y-3">
                   <Label className="text-sm font-medium">Category</Label>
@@ -363,7 +362,7 @@ const ReportCreate = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="space-y-3">
                   <Label className="text-sm font-medium">Severity Level</Label>
                   <div className="flex flex-wrap gap-2 pt-1">
@@ -374,9 +373,8 @@ const ReportCreate = () => {
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         onClick={() => setSeverity(s.value)}
-                        className={`rounded-xl border px-4 py-2 text-sm font-medium transition-all ${
-                          severity === s.value ? `${s.color} shadow-md border-transparent` : "border-muted-foreground/20 bg-background text-muted-foreground hover:bg-muted/80"
-                        }`}
+                        className={`rounded-xl border px-4 py-2 text-sm font-medium transition-all ${severity === s.value ? `${s.color} shadow-md border-transparent` : "border-muted-foreground/20 bg-background text-muted-foreground hover:bg-muted/80"
+                          }`}
                       >
                         {s.label}
                       </motion.button>
