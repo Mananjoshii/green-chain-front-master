@@ -363,7 +363,7 @@ const ReportCreate = () => {
                   </Select>
                 </div>
 
-                <div className="space-y-3">
+                {/* <div className="space-y-3">
                   <Label className="text-sm font-medium">Severity Level</Label>
                   <div className="flex flex-wrap gap-2 pt-1">
                     {SEVERITY_PILLS.map((s) => (
@@ -380,7 +380,7 @@ const ReportCreate = () => {
                       </motion.button>
                     ))}
                   </div>
-                </div>
+                </div> */}
 
                 <div className="space-y-3 md:col-span-2">
                   <Label className="text-sm font-medium">Description</Label>
