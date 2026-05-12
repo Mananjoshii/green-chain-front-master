@@ -1,0 +1,13 @@
+{
+  "expo": {
+    "extra": {
+      "eas": {
+        "projectId": "b57ad4f7-a248-436f-8a02-a9ab7ba6e2f7"
+      }
+    },
+    "owner": "mananjoshii",
+    "android": {
+      "package": "com.mananjoshii.vite_react_shadcn_ts"
+    }
+  }
+}

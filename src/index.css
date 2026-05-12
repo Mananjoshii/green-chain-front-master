@@ -1,0 +1,164 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 140 10% 97%;
+    --foreground: 160 30% 8%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 160 30% 8%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 160 30% 8%;
+
+    --primary: 152 60% 36%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 145 30% 92%;
+    --secondary-foreground: 152 60% 20%;
+
+    --muted: 140 15% 94%;
+    --muted-foreground: 160 10% 45%;
+
+    --accent: 38 92% 50%;
+    --accent-foreground: 38 92% 12%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 145 15% 88%;
+    --input: 145 15% 88%;
+    --ring: 152 60% 36%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 152 30% 12%;
+    --sidebar-foreground: 140 10% 92%;
+    --sidebar-primary: 152 60% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 152 20% 18%;
+    --sidebar-accent-foreground: 140 10% 92%;
+    --sidebar-border: 152 20% 22%;
+    --sidebar-ring: 152 60% 50%;
+
+    --eco-emerald: 152 60% 36%;
+    --eco-forest: 152 40% 18%;
+    --eco-lime: 82 70% 55%;
+    --eco-amber: 38 92% 50%;
+    --eco-sky: 200 80% 55%;
+    --eco-coral: 0 72% 60%;
+
+    --gradient-hero: linear-gradient(135deg, hsl(152 60% 36%), hsl(200 80% 55%));
+    --gradient-accent: linear-gradient(135deg, hsl(82 70% 55%), hsl(152 60% 36%));
+
+    --glass-bg: 0 0% 100% / 0.7;
+    --glass-border: 0 0% 100% / 0.3;
+    --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.07);
+  }
+
+  .dark {
+    --background: 160 30% 5%;
+    --foreground: 140 10% 95%;
+
+    --card: 160 25% 8%;
+    --card-foreground: 140 10% 95%;
+
+    --popover: 160 25% 8%;
+    --popover-foreground: 140 10% 95%;
+
+    --primary: 152 60% 45%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 152 20% 15%;
+    --secondary-foreground: 140 10% 90%;
+
+    --muted: 160 15% 14%;
+    --muted-foreground: 140 10% 60%;
+
+    --accent: 38 92% 50%;
+    --accent-foreground: 38 92% 95%;
+
+    --destructive: 0 62% 40%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 152 15% 18%;
+    --input: 152 15% 18%;
+    --ring: 152 60% 45%;
+
+    --sidebar-background: 160 30% 4%;
+    --sidebar-foreground: 140 10% 92%;
+    --sidebar-primary: 152 60% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 152 20% 12%;
+    --sidebar-accent-foreground: 140 10% 92%;
+    --sidebar-border: 152 15% 15%;
+    --sidebar-ring: 152 60% 50%;
+
+    --glass-bg: 160 25% 8% / 0.7;
+    --glass-border: 160 25% 20% / 0.3;
+    --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  }
+}
+
+@layer utilities {
+  .eco-gradient {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(200, 80%, 55%));
+  }
+  .eco-gradient-text {
+    background: linear-gradient(135deg, hsl(var(--primary)), hsl(82, 70%, 55%));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .glass {
+    background: hsl(var(--glass-bg));
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid hsl(var(--glass-border));
+    box-shadow: var(--glass-shadow);
+  }
+  .glass-strong {
+    background: hsl(var(--glass-bg));
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+    border: 1px solid hsl(var(--glass-border));
+    box-shadow: var(--glass-shadow), 0 0 0 1px hsl(var(--glass-border));
+  }
+  .gradient-mesh {
+    background-image: 
+      radial-gradient(at 20% 30%, hsl(152 60% 36% / 0.08) 0px, transparent 60%),
+      radial-gradient(at 80% 20%, hsl(200 80% 55% / 0.06) 0px, transparent 60%),
+      radial-gradient(at 60% 80%, hsl(82 70% 55% / 0.05) 0px, transparent 60%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@media (min-width: 640px) {
+  .chatbot-panel {
+    height: min(520px, calc(100vh - 6rem));
+  }
+}

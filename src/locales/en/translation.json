@@ -1,0 +1,47 @@
+{
+  "nav": {
+    "dashboard": "Dashboard",
+    "report_waste": "Report Waste",
+    "my_reports": "My Reports",
+    "hotspots": "Hotspots",
+    "rewards": "Rewards",
+    "municipal": "Municipal",
+    "analytics": "Analytics",
+    "municipal_login": "Municipal Login",
+    "get_started": "Get Started",
+    "sign_out": "Sign Out"
+  },
+  "landing": {
+    "search_placeholder": "Search by area name...",
+    "report_whatsapp": "Report via WhatsApp!",
+    "report_whatsapp_desc": "Send a photo to get started instantly.",
+    "hotspots": "Hotspots",
+    "total": "total",
+    "no_hotspots": "No hotspots found matching your search.",
+    "severity": "Severity",
+    "updated": "Updated",
+    "report_waste_btn": "Report Waste",
+    "hotspot_severity": "Hotspot Severity",
+    "high": "High",
+    "elevated": "Elevated",
+    "moderate": "Moderate",
+    "low": "Low",
+    "reports_indicator": "Numbers indicate total reports"
+  },
+  "dashboard": {
+    "welcome": "Welcome, {{name}}",
+    "subtitle": "Your NammaWaste impact dashboard",
+    "report_waste_btn": "Report Waste",
+    "total_reports": "Total Reports",
+    "resolved": "Resolved",
+    "tokens_earned": "Tokens Earned",
+    "reports_by_category": "Reports by Category",
+    "no_reports": "No reports yet.",
+    "report_resolution_rate": "Report Resolution Rate",
+    "no_reports_submitted": "No reports submitted yet.",
+    "token_earnings": "Token Earnings Over Time",
+    "no_earnings": "No earnings history available.",
+    "submit_to_earn": "Submit a report to earn tokens",
+    "pending": "Pending"
+  }
+}
