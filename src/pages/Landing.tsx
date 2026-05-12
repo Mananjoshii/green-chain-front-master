@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useTheme } from "next-themes";
 import { LanguageToggle } from "@/components/LanguageToggle";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/context/AuthContext";
@@ -39,30 +40,36 @@ const Landing = () => {
   const { t } = useTranslation();
   const { data: hotspots, isLoading } = useHotspots();
   const mapRef = useRef<L.Map | null>(null);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
 
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filteredHotspots = hotspots?.filter(h => 
+  const filteredHotspots = hotspots?.filter(h =>
     h.area_name.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
 
   useEffect(() => {
     if (isLoading || !mapContainerRef.current) return;
     if (mapRef.current) { mapRef.current.remove(); mapRef.current = null; }
-    
-    // Default to Bengaluru or a central point if no hotspots
-    const center: [number, number] = hotspots?.length ? [hotspots[0].latitude, hotspots[0].longitude] : [12.9716, 77.5946];
+
+    // Always center on Bengaluru city center
+    const center: [number, number] = [12.9716, 77.5946];
     const map = L.map(mapContainerRef.current, {
       zoomControl: false // We will add it manually or rely on default position
     }).setView(center, 12);
-    
+
     L.control.zoom({ position: 'bottomright' }).addTo(map);
 
     mapRef.current = map;
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", { 
+    const initialTileUrl = isDark
+      ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+      : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
+    tileLayerRef.current = L.tileLayer(initialTileUrl, {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
       subdomains: 'abcd',
       maxZoom: 20
@@ -73,7 +80,7 @@ const Landing = () => {
         const childMarkers = cluster.getAllChildMarkers();
         let totalReports = 0;
         let weightedSeveritySum = 0;
-        
+
         childMarkers.forEach((marker: any) => {
           const rc = marker.options.reportCount || 0;
           const sev = marker.options.avgSeverity || 0;
@@ -86,7 +93,7 @@ const Landing = () => {
 
         const size = clamp(36 + Math.log2(Math.max(totalReports, 1)) * 4, 36, 60);
         const iconHtml = `<div style="background-color: ${fill}; border: 3px solid rgba(255,255,255,0.9); color: white; border-radius: 50%; width: ${size}px; height: ${size}px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 15px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.2);">${totalReports}</div>`;
-        
+
         return L.divIcon({
           html: iconHtml,
           className: 'custom-cluster-icon',
@@ -112,14 +119,14 @@ const Landing = () => {
         .addTo(map)
         .bindPopup(
           `<div>` +
-            `<p style="font-weight:600">${h.area_name}</p>` +
-            `<p>${count} reports</p>` +
-            `<p>Avg severity: ${avgSeverity.toFixed(1)}</p>` +
-            `</div>`
+          `<p style="font-weight:600">${h.area_name}</p>` +
+          `<p>${count} reports</p>` +
+          `<p>Avg severity: ${avgSeverity.toFixed(1)}</p>` +
+          `</div>`
         );
 
       const iconHtml = `<div style="background-color: ${fill}; border: 2px solid white; color: white; border-radius: 50%; width: 36px; height: 36px; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 14px; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);">${count}</div>`;
-      
+
       const customIcon = L.divIcon({
         html: iconHtml,
         className: 'custom-leaflet-icon',
@@ -127,12 +134,12 @@ const Landing = () => {
         iconAnchor: [18, 18]
       });
 
-      const marker = L.marker([h.latitude, h.longitude], { 
+      const marker = L.marker([h.latitude, h.longitude], {
         icon: customIcon,
         reportCount: count,
         avgSeverity: avgSeverity
       } as any);
-      
+
       marker.bindPopup(`<div><p style="font-weight:600">${h.area_name}</p><p>${count} reports</p><p>Avg severity: ${avgSeverity.toFixed(1)}</p></div>`);
       clusterGroup.addLayer(marker);
     });
@@ -142,6 +149,22 @@ const Landing = () => {
     setTimeout(() => map.invalidateSize(), 100);
     return () => { map.remove(); mapRef.current = null; };
   }, [isLoading, hotspots]);
+
+  // Swap tile layer when theme changes (no full map reinit needed)
+  useEffect(() => {
+    if (!mapRef.current) return;
+    if (tileLayerRef.current) {
+      mapRef.current.removeLayer(tileLayerRef.current);
+    }
+    const tileUrl = isDark
+      ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+      : "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png";
+    tileLayerRef.current = L.tileLayer(tileUrl, {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 20
+    }).addTo(mapRef.current);
+  }, [isDark]);
 
   // Navigate to location when clicking a hotspot card
   const flyToHotspot = (lat: number, lng: number) => {
@@ -191,33 +214,37 @@ const Landing = () => {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
-        
+
         {/* Sidebar */}
         <div className="w-full md:w-[400px] lg:w-[450px] bg-card flex flex-col border-r shadow-lg z-10 flex-shrink-0 h-full">
           {/* Sidebar Header & Search */}
           <div className="p-4 border-b space-y-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input 
+              <Input
                 placeholder={t('landing.search_placeholder', "Search by area name...")}
-                className="pl-9 bg-background/50" 
+                className="pl-9 bg-background/50"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            
-            {/* WhatsApp Banner (Optional/Mock as per UI reference) */}
-            <div className="bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900 rounded-lg p-3 flex items-start gap-3 relative">
-              <div className="bg-emerald-500 rounded-full p-1.5 flex-shrink-0 mt-0.5">
-                <svg viewBox="0 0 24 24" className="h-4 w-4 text-white fill-current"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51a12.8 12.8 0 0 0-.57-.01c-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z"/></svg>
+
+            {/* Telegram Banner */}
+            <a
+              href="https://t.me/EcoChain_waste_bot"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-sky-50 dark:bg-sky-950/30 border border-sky-100 dark:border-sky-900 rounded-lg p-3 flex items-start gap-3 hover:bg-sky-100 dark:hover:bg-sky-900/40 transition-colors cursor-pointer"
+            >
+              <div className="bg-[#2AABEE] rounded-full p-1.5 flex-shrink-0 mt-0.5">
+                <svg viewBox="0 0 24 24" className="h-4 w-4 text-white fill-current">
+                  <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z" />
+                </svg>
               </div>
-              <p className="text-sm font-medium text-emerald-800 dark:text-emerald-300">
-                {t('landing.report_whatsapp', "Report via WhatsApp!")} <span className="font-normal text-emerald-700 dark:text-emerald-400">{t('landing.report_whatsapp_desc', "Send a photo to get started instantly.")}</span>
+              <p className="text-sm font-medium text-sky-800 dark:text-sky-300">
+                Report via Telegram! <span className="font-normal text-sky-700 dark:text-sky-400">Send a photo to get started instantly.</span>
               </p>
-              <button className="absolute top-2 right-2 text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-200">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+            </a>
           </div>
 
           {/* List Header */}
@@ -242,7 +269,7 @@ const Landing = () => {
                 const avgSeverity = Number(h.avg_severity ?? 0);
                 const { fill } = zoneColor(avgSeverity);
                 return (
-                  <motion.div 
+                  <motion.div
                     key={h.id}
                     whileHover={{ scale: 1.01 }}
                     whileTap={{ scale: 0.99 }}
@@ -278,8 +305,8 @@ const Landing = () => {
 
           {/* Sticky Bottom Action */}
           <div className="p-4 border-t bg-card/95 backdrop-blur-sm shadow-[0_-4px_10px_rgba(0,0,0,0.05)] relative z-20">
-            <Button 
-              size="lg" 
+            <Button
+              size="lg"
               className="w-full gap-2 bg-destructive hover:bg-destructive/90 text-white font-bold h-14 text-lg"
               onClick={handleReportWaste}
             >
@@ -295,7 +322,7 @@ const Landing = () => {
           ) : (
             <div ref={mapContainerRef} className="h-full w-full absolute inset-0 z-0" />
           )}
-          
+
           {/* Floating Map Legend */}
           <div className="absolute bottom-6 left-6 z-[1000] bg-card/90 backdrop-blur-md border shadow-lg rounded-xl p-4 text-sm max-w-[200px]">
             <div className="font-bold mb-2">{t('landing.hotspot_severity', 'Hotspot Severity')}</div>
