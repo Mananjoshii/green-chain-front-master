@@ -48,7 +48,7 @@ function rememberProcessingUpdate(updateId: number) {
 
 async function sendWelcomeMessage(botToken: string, chatId: number) {
   const startMsg =
-    "🌱 Welcome to EcoChain!\n\n" +
+    "🌱 Welcome to NammaWasteBot!\n\n" +
     "Submit waste reports and help clean our city! 🌍\n\n" +
     "Step 1: Send a photo of the waste 📸\n" +
     "Step 2: Share your location 📍\n\n" +
