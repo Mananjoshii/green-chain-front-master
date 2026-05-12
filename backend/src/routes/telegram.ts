@@ -25,7 +25,12 @@ type ChatDraft = {
   createdAt?: number;
 };
 
+type WelcomeState = {
+  welcomedAt: number;
+};
+
 const chatDrafts = new Map<number, ChatDraft>();
+const welcomedChats = new Map<number, WelcomeState>();
 const processedUpdateIds = new Map<number, number>();
 // tracks updates currently being processed so we don't double-handle the same update concurrently
 const processingUpdates = new Map<number, number>();
@@ -39,6 +44,28 @@ function rememberProcessingUpdate(updateId: number) {
   processingUpdates.set(updateId, Date.now());
   // safety TTL for in-progress markers
   setTimeout(() => processingUpdates.delete(updateId), 5 * 60 * 1000);
+}
+
+async function sendWelcomeMessage(botToken: string, chatId: number) {
+  const startMsg =
+    "🌱 Welcome to EcoChain!\n\n" +
+    "Submit waste reports and help clean our city! 🌍\n\n" +
+    "Step 1: Send a photo of the waste 📸\n" +
+    "Step 2: Share your location 📍\n\n" +
+    "Note: Telegram does not allow bots to open your camera directly from a button. " +
+    "Tap the attachment icon to send a photo.\n\n" +
+    "Our AI will verify the waste and route it to municipal officers.";
+
+  const keyboard = {
+    keyboard: [
+      [{ text: "📸 Send Photo" }],
+      [{ text: "📍 Share Location", request_location: true }]
+    ],
+    resize_keyboard: true,
+    one_time_keyboard: false
+  };
+
+  await sendTelegramMessage(botToken, chatId, startMsg, keyboard);
 }
 
 export function telegramRouter(env: Env) {
@@ -86,28 +113,18 @@ export function telegramRouter(env: Env) {
 
       if (!chatId) return res.status(200).json({ ok: true });
 
+      const welcomedState = welcomedChats.get(chatId);
+      const isFirstChatMessage = !welcomedState;
+      if (isFirstChatMessage) {
+        welcomedChats.set(chatId, { welcomedAt: Date.now() });
+        await sendWelcomeMessage(token, chatId);
+      }
+
       // Handle /start command
       if (text === "/start") {
-        const startMsg =
-          "🌱 Welcome to EcoChain!\n\n" +
-          "Submit waste reports and help clean our city! 🌍\n\n" +
-          "Step 1: Send a photo of the waste 📸\n" +
-          "Step 2: Share your location 📍\n\n" +
-          "Note: Telegram does not allow bots to open your camera directly from a button. " +
-          "Tap the attachment icon to send a photo.\n\n" +
-          "Our AI will verify the waste and route it to municipal officers.";
-
-        const keyboard = {
-          keyboard: [
-            [{ text: "📸 Send Photo" }],
-            [{ text: "📍 Share Location", request_location: true }]
-          ],
-          resize_keyboard: true,
-          one_time_keyboard: false
-        };
-
         chatDrafts.delete(chatId);
-        await sendTelegramMessage(token, chatId, startMsg, keyboard);
+        welcomedChats.set(chatId, { welcomedAt: Date.now() });
+        await sendWelcomeMessage(token, chatId);
         return res.status(200).json({ ok: true });
       }
 
