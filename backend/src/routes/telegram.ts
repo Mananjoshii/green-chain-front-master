@@ -1,8 +1,11 @@
 import { Router } from "express";
+import { Client } from "@googlemaps/google-maps-services-js";
 import type { Env } from "../env.js";
 import { getAdminSupabase } from "../supabase/clients.js";
 import { processReport } from "../pipeline/processReport.js";
-import { sendTelegramMessage } from "../supabase/telegram_utils.js";
+import { sendTelegramMessage, sendTelegramMediaGroup } from "../supabase/telegram_utils.js";
+
+const googleMaps = new Client({});
 
 type ChatDraft = {
   photoFileId?: string;
@@ -171,6 +174,25 @@ export function telegramRouter(env: Env) {
       // Download file from Telegram and upload to Supabase storage.
       // Attempt upload with a small retry loop to avoid transient network timeouts
       let imageUrl: string | null = null;
+      let reverseGeoAddress = "";
+
+      // Reverse geocode if location is present
+      if (draft.location && env.GOOGLE_MAPS_API_KEY) {
+        try {
+          const res = await googleMaps.reverseGeocode({
+            params: {
+              latlng: { lat: draft.location.latitude, lng: draft.location.longitude },
+              key: env.GOOGLE_MAPS_API_KEY
+            }
+          });
+          if (res.data.results && res.data.results.length > 0) {
+            reverseGeoAddress = res.data.results[0].formatted_address;
+          }
+        } catch (err) {
+          console.error("Reverse geocoding failed:", err);
+        }
+      }
+
       let uploadLastError: any = null;
       const maxUploadAttempts = 3;
       for (let attempt = 1; attempt <= maxUploadAttempts; attempt++) {
@@ -265,7 +287,7 @@ export function telegramRouter(env: Env) {
           image_url: imageUrl,
           latitude: draft.location.latitude,
           longitude: draft.location.longitude,
-          location_address: message.location_address ?? "",
+          location_address: reverseGeoAddress || message.location_address || "Submitted via Telegram Bot",
           category: "other",
           severity: "medium",
           description: message.caption ?? "Submitted via Telegram",
