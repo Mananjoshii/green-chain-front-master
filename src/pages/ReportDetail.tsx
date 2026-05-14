@@ -26,6 +26,14 @@ const stageIcon: Record<AgentStageStatus, React.ReactNode> = {
   failed: <XCircle className="h-5 w-5 text-destructive" />,
 };
 
+const AGENT_DESCRIPTIONS: Record<AgentType, string> = {
+  waste_verification: "Analyzes the report to confirm the presence, category, and severity of waste.",
+  geo_intelligence: "Determines the precise jurisdiction and assigns it to the appropriate municipal ward.",
+  municipal_coordination: "Alerts local authorities and integrates the report into the city's workflow.",
+  reward_optimization: "Calculates the appropriate citizen reward based on issue severity and location.",
+  fraud_detection: "Cross-references past data to prevent duplicate or anomalous reports.",
+};
+
 const stageBorder: Record<AgentStageStatus, string> = {
   pending: "border-border",
   processing: "border-primary shadow-md shadow-primary/20",
@@ -204,91 +212,98 @@ const ReportDetail = () => {
         </CardHeader>
         <CardContent className="pt-6">
           <motion.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-0">
-            {(() => {
-              const timelineItems = AGENT_ORDER.map((agent) => {
-                const event = eventMap.get(agent);
-                return {
-                  type: "agent" as const,
-                  id: agent,
-                  event,
-                  status: (event?.status as AgentStageStatus) ?? "pending",
-                };
-              });
-
-              Object.keys(customEventLabels).forEach((eventName) => {
-                const customEvent = eventMap.get(eventName);
-                if (customEvent) {
-                  timelineItems.push({
-                    type: "custom" as const,
-                    id: eventName,
-                    event: customEvent,
-                    status: "completed",
-                  });
-                }
-              });
-
-              return timelineItems.map((item, i) => {
-                const isLast = i === timelineItems.length - 1;
-
-                if (item.type === "agent") {
-                  return (
-                    <motion.div key={item.id} variants={fadeInUp} className="flex gap-4">
-                      <div className="flex flex-col items-center">
-                        <motion.div
-                          initial={{ scale: 0.8 }}
-                          animate={item.status === "processing" ? { scale: [1, 1.1, 1] } : { scale: 1 }}
-                          transition={item.status === "processing" ? { duration: 1.5, repeat: Infinity } : { duration: 0.3 }}
-                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 bg-card ${stageBorder[item.status]}`}
-                        >
-                          {stageIcon[item.status]}
-                        </motion.div>
-                        {!isLast && (
-                          <div className={`w-0.5 flex-1 ${item.status === "completed" ? "bg-emerald-400" : "bg-border"}`} />
-                        )}
-                      </div>
-                      <div className="pb-6 pt-1">
-                        <p className="font-medium">{AGENT_LABELS[item.id]}</p>
-                        <p className="text-sm text-muted-foreground capitalize">{item.status}</p>
-                        {item.event?.message && <p className="mt-1 text-sm">{item.event.message}</p>}
-                        {item.id === "geo_intelligence" && item.event?.metadata?.ward_name && (
-                          <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
-                            📍 Ward: {String(item.event.metadata.ward_name)}
-                          </span>
-                        )}
-                        {item.id === "geo_intelligence" && item.event?.metadata && item.event.metadata.ward_name === null && item.status === "completed" && (
-                          <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-                            📍 Outside monitored wards
-                          </span>
-                        )}
-                        {item.event?.time && <p className="text-xs text-muted-foreground">{format(new Date(item.event.time), "h:mm a")}</p>}
-                      </div>
+            {AGENT_ORDER.map((agent, i) => {
+              const event = eventMap.get(agent);
+              const status = event?.status as AgentStageStatus ?? "pending";
+              return (
+                <motion.div key={agent} variants={fadeInUp} className="flex gap-4 min-h-[100px]">
+                  <div className="flex flex-col items-center">
+                    <motion.div
+                      initial={{ scale: 0.8 }}
+                      animate={status === "processing" ? { scale: [1, 1.1, 1] } : { scale: 1 }}
+                      transition={status === "processing" ? { duration: 1.5, repeat: Infinity } : { duration: 0.3 }}
+                      className={`flex z-10 h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 bg-card ${stageBorder[status]}`}
+                    >
+                      {stageIcon[status]}
                     </motion.div>
-                  );
-                } else {
-                  const label = customEventLabels[item.id];
-                  return (
-                    <motion.div key={item.id} variants={fadeInUp} className="flex gap-4">
-                      <div className="flex flex-col items-center">
-                         <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 bg-card border-border`}>
-                            <span className="text-sm">{label.icon}</span>
-                         </div>
-                         {!isLast && (
-                           <div className="w-0.5 flex-1 bg-border" />
-                         )}
+                    {/* Render continuous line except for last item */}
+                    {i < AGENT_ORDER.length - 1 && (
+                      <div className={`w-0.5 flex-1 mt-2 mb-2 ${status === "completed" ? "bg-emerald-400" : "bg-border"}`} />
+                    )}
+                  </div>
+                  <div className="pb-6 flex-1">
+                    <div className={`p-4 rounded-xl border bg-card/40 backdrop-blur-sm shadow-sm transition-all border-l-4 ${status === 'completed' ? 'border-l-emerald-500' : status === 'processing' ? 'border-l-primary border-primary/30 shadow-primary/10' : status === 'failed' ? 'border-l-destructive' : 'border-l-border'}`}>
+                      <div className="flex items-start justify-between gap-4">
+                        <div>
+                          <p className="font-semibold text-base">{AGENT_LABELS[agent]}</p>
+                          <p className="text-sm text-muted-foreground mt-1">{AGENT_DESCRIPTIONS[agent]}</p>
+                        </div>
+                        <Badge variant={status === 'completed' ? 'default' : status === 'processing' ? 'outline' : status === 'failed' ? 'destructive' : 'secondary'} className={`${status === 'completed' ? 'bg-emerald-500 hover:bg-emerald-600 text-white' : ''} capitalize shadow-sm shrink-0`}>
+                          {status}
+                        </Badge>
                       </div>
-                      <div className="pb-6 pt-1">
-                        <p className="font-medium">{label.text}</p>
-                        {item.event?.time && <p className="text-xs text-muted-foreground">{format(new Date(item.event.time), "h:mm a")}</p>}
-                        {item.event?.message && <p className="mt-1 text-sm text-muted-foreground">{item.event.message}</p>}
-                      </div>
-                    </motion.div>
-                  );
-                }
-              });
-            })()}
+                      
+                      {event?.message && <p className="mt-3 text-sm font-medium bg-muted/50 p-2 rounded-md">{event.message}</p>}
+                      
+                      {agent === "geo_intelligence" && event?.metadata?.ward_name && (
+                        <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-3 py-1 text-xs font-medium text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
+                          📍 Ward: {String(event.metadata.ward_name)}
+                        </span>
+                      )}
+                      {agent === "geo_intelligence" && event?.metadata && event.metadata.ward_name === null && status === "completed" && (
+                        <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-muted px-3 py-1 text-xs font-medium text-muted-foreground">
+                          📍 Outside monitored wards
+                        </span>
+                      )}
+                      {event?.time && <p className="text-xs text-muted-foreground mt-2">{format(new Date(event.time), "MMM d, yyyy 'at' h:mm a")}</p>}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
           </motion.div>
         </CardContent>
       </Card>
+
+      {/* Manual Activity Timeline */}
+      {Object.keys(customEventLabels).some(eventName => eventMap.has(eventName)) && (
+        <Card className="glass border-white/40 dark:border-white/10 hover:shadow-lg transition-shadow duration-300 mt-8">
+          <CardHeader className="pb-4 border-b bg-muted/10">
+            <CardTitle className="text-xl flex items-center gap-2">
+              <Clock className="h-5 w-5 text-primary" /> Activity Timeline
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-6">
+            <motion.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-0">
+              {Object.keys(customEventLabels).map((eventName, idx, arr) => {
+                const customEvent = eventMap.get(eventName);
+                if (!customEvent) return null;
+                const label = customEventLabels[eventName];
+                
+                return (
+                  <motion.div key={eventName} variants={fadeInUp} className="flex gap-4">
+                    <div className="flex flex-col items-center">
+                       <div className="flex z-10 h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 bg-card border-border shadow-sm">
+                          <span className="text-base">{label.icon}</span>
+                       </div>
+                       {idx < arr.length - 1 && (
+                         <div className="w-0.5 flex-1 mt-2 mb-2 bg-border" />
+                       )}
+                    </div>
+                    <div className="pb-6 flex-1">
+                      <div className="p-4 rounded-xl border bg-muted/20 shadow-sm">
+                        <p className="font-medium text-foreground">{label.text}</p>
+                        {customEvent.message && <p className="mt-2 text-sm text-muted-foreground bg-background/50 p-2 rounded-md">{customEvent.message}</p>}
+                        {customEvent.time && <p className="text-xs text-muted-foreground mt-2">{format(new Date(customEvent.time), "PPpp")}</p>}
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </motion.div>
+          </CardContent>
+        </Card>
+      )}
     </AnimatedPage>
   );
 };
