@@ -3,7 +3,7 @@ import { getAdminSupabase } from "../../supabase/clients.js";
 import { getOpenAI } from "../../ai/openaiCompatible.js";
 import type { VerificationResponse, VerificationResult } from "../../types/index.js";
 import { upsertReportEvent } from "../events.js";
-import { sendTelegramMessage } from "../../supabase/telegram_utils.js";
+import { sendTelegramMessage, sendTelegramMediaGroup } from "../../supabase/telegram_utils.js";
 
 const RESOLUTION_VERIFICATION_SYSTEM_PROMPT = `You are an AI verification agent for a municipal waste management system.
 You will be given TWO images:
@@ -234,7 +234,7 @@ export async function runResolutionVerificationAgent(
     try {
       const { data: updatedReport } = await supabaseAdmin
         .from('reports')
-        .select('id, telegram_chat_id, location_address')
+        .select('id, telegram_chat_id, location_address, image_url, resolution_image_url, verification_reasoning')
         .eq('id', reportId)
         .single();
 
@@ -242,10 +242,28 @@ export async function runResolutionVerificationAgent(
         const chatId = Number(updatedReport.telegram_chat_id);
         const botToken = env.TELEGRAM_BOT_TOKEN;
         const shortId = (updatedReport.id || "").toString().slice(0, 8);
-        const message = `✅ Great news! Your report #${shortId} has been verified as resolved. You've earned reward tokens! 🌟 Thank you for making our city cleaner.` + 
-          (updatedReport.location_address ? `\n\nLocation: ${updatedReport.location_address}` : "");
         
-        await sendTelegramMessage(botToken, chatId, message);
+        const summary = `<b>Resolution Summary:</b>\n${updatedReport.verification_reasoning || "The area has been successfully cleared and verified by our AI agent."}`;
+        
+        const caption = `✅ <b>Report Resolved!</b>\n\n` +
+          `Your report #${shortId} has been closed.\n\n` +
+          `${summary}\n\n` +
+          `🌟 <b>Reward tokens have been added to your wallet!</b>\n` +
+          (updatedReport.location_address ? `📍 ${updatedReport.location_address}` : "");
+
+        const media: any[] = [];
+        if (updatedReport.image_url) {
+          media.push({ type: 'photo', media: updatedReport.image_url, caption: updatedReport.resolution_image_url ? undefined : caption, parse_mode: 'HTML' });
+        }
+        if (updatedReport.resolution_image_url) {
+          media.push({ type: 'photo', media: updatedReport.resolution_image_url, caption: caption, parse_mode: 'HTML' });
+        }
+
+        if (media.length > 0) {
+          await sendTelegramMediaGroup(botToken, chatId, media);
+        } else {
+          await sendTelegramMessage(botToken, chatId, caption);
+        }
       }
     } catch (notifyErr) {
       console.error("Failed to notify reporter via Telegram about resolution:", notifyErr);

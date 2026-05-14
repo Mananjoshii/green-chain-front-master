@@ -5,7 +5,7 @@ import multer from "multer";
 import type { Env } from "../env.js";
 import { getAdminSupabase } from "../supabase/clients.js";
 import { requireMunicipal } from "../middleware/requireRole.js";
-import { sendTelegramMessage } from "../supabase/telegram_utils.js";
+import { sendTelegramMessage, sendTelegramMediaGroup } from "../supabase/telegram_utils.js";
 
 export function municipalRouter(env: Env) {
   const router = Router();
@@ -150,13 +150,29 @@ export function municipalRouter(env: Env) {
 
       // After marking resolved, attempt to notify original reporter via Telegram if we have a chat id
       try {
-        const { data: updatedReport, error: fetched } = await supabaseAdmin.from("reports").select("id, telegram_chat_id, image_url, location_address").eq("id", id).single();
+        const { data: updatedReport, error: fetched } = await supabaseAdmin.from("reports").select("id, telegram_chat_id, image_url, resolution_image_url, location_address").eq("id", id).single();
         if (!fetched && updatedReport && updatedReport.telegram_chat_id) {
           const chatId = Number(updatedReport.telegram_chat_id);
           const botToken = env.TELEGRAM_BOT_TOKEN;
           const shortId = (updatedReport.id || "").toString().slice(0, 8);
-          const message = `✅ Good news — your report ${shortId} has been marked resolved. Thank you for reporting!` + (updatedReport.location_address ? `\n\nLocation: ${updatedReport.location_address}` : "");
-          await sendTelegramMessage(botToken, chatId, message);
+          
+          const caption = `✅ <b>Report Resolved!</b>\n\n` +
+            `Good news — your report #${shortId} has been marked resolved. Thank you for reporting!\n\n` +
+            (updatedReport.location_address ? `📍 ${updatedReport.location_address}` : "");
+
+          const media: any[] = [];
+          if (updatedReport.image_url) {
+            media.push({ type: 'photo', media: updatedReport.image_url, caption: updatedReport.resolution_image_url ? undefined : caption, parse_mode: 'HTML' });
+          }
+          if (updatedReport.resolution_image_url) {
+            media.push({ type: 'photo', media: updatedReport.resolution_image_url, caption: caption, parse_mode: 'HTML' });
+          }
+
+          if (media.length > 0) {
+            await sendTelegramMediaGroup(botToken, chatId, media);
+          } else {
+            await sendTelegramMessage(botToken, chatId, caption);
+          }
         }
       } catch (notifyErr) {
         console.error("Failed to notify reporter about resolution:", notifyErr);
