@@ -282,7 +282,8 @@ export function telegramRouter(env: Env) {
           category: "other",
           severity: "medium",
           description: message.caption ?? "Submitted via Telegram",
-          status: "pending"
+          status: "pending",
+          telegram_chat_id: chatId
         })
         .select()
         .single();
