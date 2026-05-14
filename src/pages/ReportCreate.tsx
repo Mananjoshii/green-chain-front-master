@@ -193,6 +193,30 @@ const ReportCreate = () => {
       // Kick off the AI agent pipeline
       try {
         await apiClient.post(`/reports/${report.id}/process`);
+
+        // Poll once for the ward assignment from geo_intelligence stage
+        try {
+          const { data: events } = await supabase
+            .from("report_events")
+            .select("message,metadata")
+            .eq("report_id", report.id)
+            .eq("agent_type", "geo_intelligence")
+            .order("created_at", { ascending: false });
+
+          const wardEvent = events?.find(
+            (e) => (e.metadata as any)?.ward_name
+          );
+          if (wardEvent) {
+            const wardName = (wardEvent.metadata as any).ward_name as string;
+            const wardNo = (wardEvent.metadata as any).ward_no as string;
+            toast({
+              title: `📍 Ward Assigned`,
+              description: `Your report is in ${wardName} (Ward No. ${wardNo}).`,
+            });
+          }
+        } catch {
+          // Ward toast is best-effort — don't block navigation
+        }
       } catch (pipelineErr: any) {
         console.error("Pipeline trigger failed:", pipelineErr?.message);
         toast({

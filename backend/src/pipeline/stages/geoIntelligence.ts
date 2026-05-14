@@ -2,6 +2,7 @@ import type { Env } from "../../env.js";
 import { getAdminSupabase } from "../../supabase/clients.js";
 import { upsertReportEvent } from "../events.js";
 import { haversineMeters } from "../utils/geo.js";
+import { findWard } from "../utils/wardLookup.js";
 
 const DEFAULT_NEARBY_METERS = 250;
 
@@ -49,6 +50,13 @@ export async function stageGeoIntelligence(env: Env, reportId: string) {
     }
   }
 
+  // ── Ward identification ──────────────────────────────────────────────────
+  const ward = findWard(lat, lng);
+  const wardMeta = ward
+    ? { ward_name: ward.wardName, ward_no: ward.wardNo, ward_id: ward.wardId }
+    : { ward_name: null };
+
+  // ── Hotspot clustering ───────────────────────────────────────────────────
   if (nearest && nearestDist <= DEFAULT_NEARBY_METERS) {
     const newCount = (nearest.report_count ?? 0) + 1;
     const severityScore: Record<string, number> = { low: 1, medium: 2, high: 3, critical: 4 };
@@ -61,12 +69,13 @@ export async function stageGeoIntelligence(env: Env, reportId: string) {
       .eq("id", nearest.id);
     if (updErr) throw updErr;
 
+    const wardSuffix = ward ? ` · Ward: ${ward.wardName}` : "";
     await upsertReportEvent(env, {
       reportId,
       agentType: "geo_intelligence",
       stageStatus: "processing",
-      message: `Linked to hotspot '${nearest.area_name}' (${Math.round(nearestDist)}m)`,
-      metadata: { hotspot_id: nearest.id, distance_meters: nearestDist, action: "incremented" }
+      message: `Linked to hotspot '${nearest.area_name}' (${Math.round(nearestDist)}m)${wardSuffix}`,
+      metadata: { hotspot_id: nearest.id, distance_meters: nearestDist, action: "incremented", ...wardMeta }
     });
     return;
   }
@@ -86,12 +95,13 @@ export async function stageGeoIntelligence(env: Env, reportId: string) {
     .single();
   if (insErr) throw insErr;
 
+  const wardSuffix = ward ? ` · Ward: ${ward.wardName}` : "";
   await upsertReportEvent(env, {
     reportId,
     agentType: "geo_intelligence",
     stageStatus: "processing",
-    message: `Created new hotspot '${created.area_name}'`,
-    metadata: { hotspot_id: created.id, action: "created" }
+    message: `Created new hotspot '${created.area_name}'${wardSuffix}`,
+    metadata: { hotspot_id: created.id, action: "created", ...wardMeta }
   });
 }
 

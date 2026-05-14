@@ -68,11 +68,11 @@ const ReportDetail = () => {
     }
   };
 
-  const eventMap = new Map<AgentType | string, { status: AgentStageStatus | string; message?: string | null; time?: string }>();
+  const eventMap = new Map<AgentType | string, { status: AgentStageStatus | string; message?: string | null; time?: string; metadata?: Record<string, unknown> | null }>();
   events?.forEach((e) => {
     // Some events might just have event_type instead of agent_type if they are custom timeline events
     // We inserted custom event_type in backend, but it's saved in agent_type column due to schema limits
-    eventMap.set(e.agent_type, { status: e.stage_status, message: e.message, time: e.created_at });
+    eventMap.set(e.agent_type, { status: e.stage_status, message: e.message, time: e.created_at, metadata: e.metadata as Record<string, unknown> | null });
   });
 
   if (isLoading) return <div className="space-y-4"><Skeleton className="h-8 w-64" /><Skeleton className="h-64 w-full" /></div>;
@@ -223,6 +223,16 @@ const ReportDetail = () => {
                     <p className="font-medium">{AGENT_LABELS[agent]}</p>
                     <p className="text-sm text-muted-foreground capitalize">{status}</p>
                     {event?.message && <p className="mt-1 text-sm">{event.message}</p>}
+                    {agent === "geo_intelligence" && event?.metadata?.ward_name && (
+                      <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
+                        📍 Ward: {String(event.metadata.ward_name)}
+                      </span>
+                    )}
+                    {agent === "geo_intelligence" && event?.metadata && event.metadata.ward_name === null && status === "completed" && (
+                      <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                        📍 Outside monitored wards
+                      </span>
+                    )}
                     {event?.time && <p className="text-xs text-muted-foreground">{format(new Date(event.time), "h:mm a")}</p>}
                   </div>
                 </motion.div>
