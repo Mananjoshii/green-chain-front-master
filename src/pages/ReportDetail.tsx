@@ -26,7 +26,7 @@ const stageIcon: Record<AgentStageStatus, React.ReactNode> = {
   failed: <XCircle className="h-5 w-5 text-destructive" />,
 };
 
-const AGENT_DESCRIPTIONS: Record<AgentType, string> = {
+const AGENT_DESCRIPTIONS: Partial<Record<AgentType, string>> = {
   waste_verification: "Analyzes the report to confirm the presence, category, and severity of waste.",
   geo_intelligence: "Determines the precise jurisdiction and assigns it to the appropriate municipal ward.",
   municipal_coordination: "Alerts local authorities and integrates the report into the city's workflow.",
