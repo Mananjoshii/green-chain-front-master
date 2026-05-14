@@ -27,8 +27,15 @@ const AppLayout = () => {
   const isAdmin = hasRole("admin");
   const isCityPlanner = hasRole("city_planner");
 
-  const navLinks = isMunicipalOfficer && !isAdmin
-    ? [{ to: "/municipal", label: t('nav.municipal', 'Municipal Dashboard') }]
+  const isStaff = isAdmin || isMunicipalOfficer;
+
+  const navLinks = isStaff
+    ? [
+        { to: "/municipal", label: t('nav.municipal', 'Municipal Dashboard') },
+        { to: "/report/new", label: t('nav.report_waste', 'Report Waste') },
+        { to: "/hotspots", label: t('nav.hotspots', 'Hotspots') },
+        ...(isAdmin ? [{ to: "/analytics", label: t('nav.analytics', 'Analytics') }] : []),
+      ]
     : isCityPlanner && !isAdmin
     ? [{ to: "/analytics", label: t('nav.analytics', 'Analytics') }]
     : [
@@ -37,7 +44,6 @@ const AppLayout = () => {
         { to: "/reports", label: t('nav.my_reports', 'My Reports') },
         { to: "/hotspots", label: t('nav.hotspots', 'Hotspots') },
         { to: "/rewards", label: t('nav.rewards', 'Rewards') },
-        ...(isAdmin ? [{ to: "/municipal", label: t('nav.municipal', 'Municipal') }, { to: "/analytics", label: t('nav.analytics', 'Analytics') }] : []),
       ];
 
   return (

@@ -31,9 +31,9 @@ const Login = () => {
   const { user } = useAuth();
   useEffect(() => {
     if (user) {
-      if (user.roles.includes("municipal_officer") && !user.roles.includes("admin")) {
+      if (user.roles.includes("admin") || user.roles.includes("municipal_officer")) {
         navigate("/municipal");
-      } else if (user.roles.includes("city_planner") && !user.roles.includes("admin")) {
+      } else if (user.roles.includes("city_planner")) {
         navigate("/analytics");
       } else {
         navigate("/dashboard");

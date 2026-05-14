@@ -193,9 +193,11 @@ const Landing = () => {
           <div className="flex items-center gap-3">
             <LanguageToggle />
             <ThemeToggle />
-            <Link to="/login" className="hidden sm:inline-flex">
-              <Button variant="outline" size="sm">{t('nav.municipal_login', 'Municipal Login')}</Button>
-            </Link>
+            {!user && (
+              <Link to="/login" className="hidden sm:inline-flex">
+                <Button variant="outline" size="sm">{t('nav.sign_in', 'Sign In')}</Button>
+              </Link>
+            )}
             {!user && (
               <Link to="/signup">
                 <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>

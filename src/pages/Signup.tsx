@@ -79,17 +79,7 @@ const Signup = () => {
                 <Label htmlFor="confirm">Confirm Password</Label>
                 <Input id="confirm" type="password" required value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder="••••••••" className="transition-shadow focus:shadow-md focus:shadow-primary/10" />
               </div>
-              <div className="space-y-2">
-                <Label>Role</Label>
-                <Select value={role} onValueChange={(v) => setRole(v as AppRole)}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="citizen">Citizen</SelectItem>
-                    <SelectItem value="municipal_officer">Municipal Officer</SelectItem>
-                    <SelectItem value="city_planner">City Planner</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+
             </CardContent>
             <CardFooter className="flex flex-col gap-3">
               <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} className="w-full">

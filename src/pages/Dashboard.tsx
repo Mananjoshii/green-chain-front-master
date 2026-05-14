@@ -57,11 +57,22 @@ const Dashboard = () => {
           <h1 className="text-3xl font-bold">{t('dashboard.welcome', { name: user?.fullName || "Citizen" })}</h1>
           <p className="text-muted-foreground">{t('dashboard.subtitle', 'Your NammaWaste impact dashboard')}</p>
         </div>
-        <Link to="/report/new">
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
-            <Button className="gap-2 shadow-md"><Plus className="h-4 w-4" /> {t('dashboard.report_waste_btn', 'Report Waste')}</Button>
-          </motion.div>
-        </Link>
+        <div className="flex flex-wrap gap-3 mt-4 sm:mt-0">
+          {user?.roles?.includes("admin") && (
+            <Link to="/municipal">
+              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
+                <Button variant="outline" className="gap-2 shadow-md border-primary text-primary hover:bg-primary/10">
+                  {t('nav.municipal', 'Municipal Dashboard')}
+                </Button>
+              </motion.div>
+            </Link>
+          )}
+          <Link to="/report/new">
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}>
+              <Button className="gap-2 shadow-md"><Plus className="h-4 w-4" /> {t('dashboard.report_waste_btn', 'Report Waste')}</Button>
+            </motion.div>
+          </Link>
+        </div>
       </div>
 
       {/* High-level Stats */}

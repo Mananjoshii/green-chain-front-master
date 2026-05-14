@@ -51,7 +51,7 @@ const App = () => (
                 <Route path="/hotspots" element={<Hotspots />} />
                 <Route path="/rewards" element={<Rewards />} />
               </Route>
-              <Route element={<ProtectedRoute roles={["municipal_officer", "admin"]}><AppLayout /></ProtectedRoute>}>
+              <Route element={<ProtectedRoute roles={["admin", "municipal_officer"]}><AppLayout /></ProtectedRoute>}>
                 <Route path="/municipal" element={<MunicipalDashboard />} />
               </Route>
               <Route element={<ProtectedRoute roles={["city_planner", "admin"]}><AppLayout /></ProtectedRoute>}>
