@@ -19,6 +19,7 @@ import { Constants } from "@/integrations/supabase/types";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { ClipboardList, CheckCircle2, AlertTriangle, MapPin, Search, Users, Clock } from "lucide-react";
+import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 
@@ -47,6 +48,20 @@ const MunicipalDashboard = () => {
     if (areaSearch && !r.location_address.toLowerCase().includes(areaSearch.toLowerCase())) return false;
     return true;
   });
+
+  const statusCounts = filteredReports.reduce((acc, r) => {
+    acc[r.status] = (acc[r.status] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  const statusData = Object.entries(statusCounts).map(([name, value]) => ({ name: name.replace("_", " "), value }));
+
+  const severityCounts = filteredReports.reduce((acc, r) => {
+    acc[r.severity] = (acc[r.severity] || 0) + 1;
+    return acc;
+  }, {} as Record<string, number>);
+  const severityData = Object.entries(severityCounts).map(([name, value]) => ({ name, value }));
+
+  const CHART_COLORS = ["#10b981", "#f59e0b", "#3b82f6", "#8b5cf6", "#ef4444", "#64748b"];
 
   const totalPending = (reports ?? []).filter((r) => r.status === "pending" || r.status === "verified").length;
   const totalAssigned = (reports ?? []).filter((r) => r.status === "assigned" || r.status === "in_progress").length;
@@ -135,6 +150,39 @@ const MunicipalDashboard = () => {
             </Select>
           </div>
 
+          <div className="grid gap-4 md:grid-cols-2 mb-4">
+            <Card className="glass border-white/40 dark:border-white/10">
+              <CardContent className="h-[220px] pt-6">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie data={statusData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={50} outerRadius={80} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
+                      {statusData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
+                    </Pie>
+                    <RechartsTooltip contentStyle={{ borderRadius: '8px' }} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+            <Card className="glass border-white/40 dark:border-white/10">
+              <CardContent className="h-[220px] pt-6">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={severityData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                    <CartesianGrid strokeDasharray="3 3" vertical={false} opacity={0.2} />
+                    <XAxis dataKey="name" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} className="capitalize" />
+                    <YAxis tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
+                    <RechartsTooltip cursor={{ fill: 'rgba(0,0,0,0.05)' }} contentStyle={{ borderRadius: '8px' }} />
+                    <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                      {severityData.map((entry, i) => {
+                        const color = entry.name === "critical" ? "#ef4444" : entry.name === "high" ? "#f97316" : entry.name === "medium" ? "#eab308" : "#22c55e";
+                        return <Cell key={i} fill={color} />;
+                      })}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </div>
+
           <Card className="glass overflow-hidden">
             <CardContent className="p-0">
               {isLoading ? (
@@ -196,17 +244,18 @@ const MunicipalDashboard = () => {
                             </Select>
                           </TableCell>
                           <TableCell className="text-right whitespace-nowrap">
-                            {(r.status === "assigned" || r.status === "in_progress") ? (
-                              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="inline-block">
-                                <Button size="sm" onClick={() => handleAction(r.id, "resolved")} disabled={updateStatus.isPending || resolveReport.isPending || updateAdmin.isPending} className="h-8">
-                                  Resolve & Reward
-                                </Button>
-                              </motion.div>
-                            ) : (
+                            <div className="flex justify-end items-center gap-2">
+                              {(r.status === "assigned" || r.status === "in_progress") && (
+                                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="inline-block">
+                                  <Button size="sm" onClick={() => handleAction(r.id, "resolved")} disabled={updateStatus.isPending || resolveReport.isPending || updateAdmin.isPending} className="h-8">
+                                    Resolve & Reward
+                                  </Button>
+                                </motion.div>
+                              )}
                               <Link to={`/reports/${r.id}`}>
                                 <Button size="sm" variant="outline" className="h-8">View</Button>
                               </Link>
-                            )}
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}

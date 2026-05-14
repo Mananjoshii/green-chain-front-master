@@ -32,9 +32,8 @@ const AppLayout = () => {
   const navLinks = isStaff
     ? [
         { to: "/municipal", label: t('nav.municipal', 'Municipal Dashboard') },
-        { to: "/report/new", label: t('nav.report_waste', 'Report Waste') },
         { to: "/hotspots", label: t('nav.hotspots', 'Hotspots') },
-        ...(isAdmin ? [{ to: "/analytics", label: t('nav.analytics', 'Analytics') }] : []),
+        { to: "/analytics", label: t('nav.analytics', 'Analytics') },
       ]
     : isCityPlanner && !isAdmin
     ? [{ to: "/analytics", label: t('nav.analytics', 'Analytics') }]
