@@ -204,66 +204,88 @@ const ReportDetail = () => {
         </CardHeader>
         <CardContent className="pt-6">
           <motion.div variants={staggerContainer} initial="initial" animate="animate" className="space-y-0">
-            {AGENT_ORDER.map((agent, i) => {
-              const event = eventMap.get(agent);
-              const status = event?.status as AgentStageStatus ?? "pending";
-              return (
-                <motion.div key={agent} variants={fadeInUp} className="flex gap-4">
-                  <div className="flex flex-col items-center">
-                    <motion.div
-                      initial={{ scale: 0.8 }}
-                      animate={status === "processing" ? { scale: [1, 1.1, 1] } : { scale: 1 }}
-                      transition={status === "processing" ? { duration: 1.5, repeat: Infinity } : { duration: 0.3 }}
-                      className={`flex h-10 w-10 items-center justify-center rounded-full border-2 bg-card ${stageBorder[status]}`}
-                    >
-                      {stageIcon[status]}
+            {(() => {
+              const timelineItems = AGENT_ORDER.map((agent) => {
+                const event = eventMap.get(agent);
+                return {
+                  type: "agent" as const,
+                  id: agent,
+                  event,
+                  status: (event?.status as AgentStageStatus) ?? "pending",
+                };
+              });
+
+              Object.keys(customEventLabels).forEach((eventName) => {
+                const customEvent = eventMap.get(eventName);
+                if (customEvent) {
+                  timelineItems.push({
+                    type: "custom" as const,
+                    id: eventName,
+                    event: customEvent,
+                    status: "completed",
+                  });
+                }
+              });
+
+              return timelineItems.map((item, i) => {
+                const isLast = i === timelineItems.length - 1;
+
+                if (item.type === "agent") {
+                  return (
+                    <motion.div key={item.id} variants={fadeInUp} className="flex gap-4">
+                      <div className="flex flex-col items-center">
+                        <motion.div
+                          initial={{ scale: 0.8 }}
+                          animate={item.status === "processing" ? { scale: [1, 1.1, 1] } : { scale: 1 }}
+                          transition={item.status === "processing" ? { duration: 1.5, repeat: Infinity } : { duration: 0.3 }}
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 bg-card ${stageBorder[item.status]}`}
+                        >
+                          {stageIcon[item.status]}
+                        </motion.div>
+                        {!isLast && (
+                          <div className={`w-0.5 flex-1 ${item.status === "completed" ? "bg-emerald-400" : "bg-border"}`} />
+                        )}
+                      </div>
+                      <div className="pb-6 pt-1">
+                        <p className="font-medium">{AGENT_LABELS[item.id]}</p>
+                        <p className="text-sm text-muted-foreground capitalize">{item.status}</p>
+                        {item.event?.message && <p className="mt-1 text-sm">{item.event.message}</p>}
+                        {item.id === "geo_intelligence" && item.event?.metadata?.ward_name && (
+                          <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
+                            📍 Ward: {String(item.event.metadata.ward_name)}
+                          </span>
+                        )}
+                        {item.id === "geo_intelligence" && item.event?.metadata && item.event.metadata.ward_name === null && item.status === "completed" && (
+                          <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
+                            📍 Outside monitored wards
+                          </span>
+                        )}
+                        {item.event?.time && <p className="text-xs text-muted-foreground">{format(new Date(item.event.time), "h:mm a")}</p>}
+                      </div>
                     </motion.div>
-                    {/* Render line except for last item */}
-                    {i < AGENT_ORDER.length - 1 && (
-                      <div className={`h-8 w-0.5 ${status === "completed" ? "bg-emerald-400" : "bg-border"}`} />
-                    )}
-                  </div>
-                  <div className="pb-6">
-                    <p className="font-medium">{AGENT_LABELS[agent]}</p>
-                    <p className="text-sm text-muted-foreground capitalize">{status}</p>
-                    {event?.message && <p className="mt-1 text-sm">{event.message}</p>}
-                    {agent === "geo_intelligence" && event?.metadata?.ward_name && (
-                      <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
-                        📍 Ward: {String(event.metadata.ward_name)}
-                      </span>
-                    )}
-                    {agent === "geo_intelligence" && event?.metadata && event.metadata.ward_name === null && status === "completed" && (
-                      <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-muted px-2.5 py-0.5 text-xs font-medium text-muted-foreground">
-                        📍 Outside monitored wards
-                      </span>
-                    )}
-                    {event?.time && <p className="text-xs text-muted-foreground">{format(new Date(event.time), "h:mm a")}</p>}
-                  </div>
-                </motion.div>
-              );
-            })}
-            {/* Custom events renderer */}
-            {Object.keys(customEventLabels).map((eventName) => {
-              const customEvent = eventMap.get(eventName);
-              if (!customEvent) return null;
-              const label = customEventLabels[eventName];
-              
-              return (
-                <motion.div key={eventName} variants={fadeInUp} className="flex gap-4">
-                  <div className="flex flex-col items-center">
-                     <div className="h-8 w-0.5 bg-border -mt-6" />
-                     <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 bg-card border-border">
-                        <span className="text-sm">{label.icon}</span>
-                     </div>
-                  </div>
-                  <div className="pb-6 pt-2">
-                    <p className="font-medium">{label.text}</p>
-                    {customEvent.time && <p className="text-xs text-muted-foreground">{format(new Date(customEvent.time), "PPpp")}</p>}
-                    {customEvent.message && <p className="mt-1 text-sm text-muted-foreground">{customEvent.message}</p>}
-                  </div>
-                </motion.div>
-              );
-            })}
+                  );
+                } else {
+                  const label = customEventLabels[item.id];
+                  return (
+                    <motion.div key={item.id} variants={fadeInUp} className="flex gap-4">
+                      <div className="flex flex-col items-center">
+                         <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full border-2 bg-card border-border`}>
+                            <span className="text-sm">{label.icon}</span>
+                         </div>
+                         {!isLast && (
+                           <div className="w-0.5 flex-1 bg-border" />
+                         )}
+                      </div>
+                      <div className="pb-6 pt-1">
+                        <p className="font-medium">{label.text}</p>
+                        {item.event?.time && <p className="text-xs text-muted-foreground">{format(new Date(item.event.time), "h:mm a")}</p>}
+                        {item.event?.message && <p className="mt-1 text-sm text-muted-foreground">{item.event.message}</p>}
+                      </div>
+                    </motion.div>
+                  );
+                }
+              });
+            })()}
           </motion.div>
         </CardContent>
       </Card>
