@@ -22,6 +22,11 @@ const ProtectedRoute = ({ children, roles }: Props) => {
   if (!user) return <Navigate to="/login" replace />;
 
   if (roles && roles.length > 0 && !roles.some((r) => user.roles.includes(r))) {
+    if (user.roles.includes("admin") || user.roles.includes("municipal_officer")) {
+      return <Navigate to="/municipal" replace />;
+    } else if (user.roles.includes("city_planner")) {
+      return <Navigate to="/analytics" replace />;
+    }
     return <Navigate to="/dashboard" replace />;
   }
 

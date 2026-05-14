@@ -206,7 +206,7 @@ const Landing = () => {
               </Link>
             )}
             {user && (
-              <Link to="/dashboard">
+              <Link to={(user.roles?.includes("admin") || user.roles?.includes("municipal_officer")) ? "/municipal" : (user.roles?.includes("city_planner") ? "/analytics" : "/dashboard")}>
                 <Button size="sm" variant="secondary">{t('nav.dashboard', 'Dashboard')}</Button>
               </Link>
             )}
