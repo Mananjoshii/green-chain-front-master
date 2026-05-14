@@ -261,7 +261,7 @@ const ReportCreate = () => {
                   </motion.div>
                 ) : (
                   <>
-                    <label
+                    {/* <label
                       onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                       onDragLeave={() => setDragOver(false)}
                       onDrop={handleDrop}
@@ -276,7 +276,7 @@ const ReportCreate = () => {
                         </div>
                       </motion.div>
                       <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
-                    </label>
+                    </label> */}
 
                     <div className="flex flex-col gap-3 justify-center sm:w-48 shrink-0 relative">
                       <div className="hidden sm:flex absolute left-0 -ml-[23px] top-1/2 -translate-y-1/2 bg-background p-1 text-xs text-muted-foreground uppercase font-semibold tracking-wider z-10 rounded-full">Or</div>
@@ -375,7 +375,7 @@ const ReportCreate = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 bg-muted/20 p-5 rounded-2xl border border-border/50">
-                <div className="space-y-3">
+                {/* <div className="space-y-3">
                   <Label className="text-sm font-medium">Category</Label>
                   <Select value={category} onValueChange={setCategory}>
                     <SelectTrigger className="h-11 bg-background border-muted-foreground/20 rounded-xl"><SelectValue /></SelectTrigger>
@@ -385,7 +385,7 @@ const ReportCreate = () => {
                       ))}
                     </SelectContent>
                   </Select>
-                </div>
+                </div> */}
 
                 {/* <div className="space-y-3">
                   <Label className="text-sm font-medium">Severity Level</Label>
