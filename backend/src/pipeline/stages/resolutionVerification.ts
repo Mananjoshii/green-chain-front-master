@@ -3,6 +3,7 @@ import { getAdminSupabase } from "../../supabase/clients.js";
 import { getOpenAI } from "../../ai/openaiCompatible.js";
 import type { VerificationResponse, VerificationResult } from "../../types/index.js";
 import { upsertReportEvent } from "../events.js";
+import { sendTelegramMessage } from "../../supabase/telegram_utils.js";
 
 const RESOLUTION_VERIFICATION_SYSTEM_PROMPT = `You are an AI verification agent for a municipal waste management system.
 You will be given TWO images:
@@ -228,6 +229,27 @@ export async function runResolutionVerificationAgent(
   // 7. Mint token only on confirmed
   if (decision === 'confirmed') {
     await mintToken(env, reportId);
+
+    // After marking resolved and minting tokens, notify reporter via Telegram if chat_id exists
+    try {
+      const { data: updatedReport } = await supabaseAdmin
+        .from('reports')
+        .select('id, telegram_chat_id, location_address')
+        .eq('id', reportId)
+        .single();
+
+      if (updatedReport?.telegram_chat_id) {
+        const chatId = Number(updatedReport.telegram_chat_id);
+        const botToken = env.TELEGRAM_BOT_TOKEN;
+        const shortId = (updatedReport.id || "").toString().slice(0, 8);
+        const message = `✅ Great news! Your report #${shortId} has been verified as resolved. You've earned reward tokens! 🌟 Thank you for making our city cleaner.` + 
+          (updatedReport.location_address ? `\n\nLocation: ${updatedReport.location_address}` : "");
+        
+        await sendTelegramMessage(botToken, chatId, message);
+      }
+    } catch (notifyErr) {
+      console.error("Failed to notify reporter via Telegram about resolution:", notifyErr);
+    }
   }
 
   // 8. Insert timeline event

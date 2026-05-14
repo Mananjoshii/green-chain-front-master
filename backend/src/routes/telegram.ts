@@ -2,20 +2,7 @@ import { Router } from "express";
 import type { Env } from "../env.js";
 import { getAdminSupabase } from "../supabase/clients.js";
 import { processReport } from "../pipeline/processReport.js";
-
-async function sendTelegramMessage(botToken: string, chatId: number, text: string, replyMarkup?: unknown) {
-  try {
-    const body: any = { chat_id: chatId, text };
-    if (replyMarkup) body.reply_markup = replyMarkup;
-    await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body)
-    });
-  } catch (err) {
-    console.error("Failed to send Telegram message:", err);
-  }
-}
+import { sendTelegramMessage } from "../supabase/telegram_utils.js";
 
 type ChatDraft = {
   photoFileId?: string;

@@ -5,23 +5,11 @@ import multer from "multer";
 import type { Env } from "../env.js";
 import { getAdminSupabase } from "../supabase/clients.js";
 import { requireMunicipal } from "../middleware/requireRole.js";
+import { sendTelegramMessage } from "../supabase/telegram_utils.js";
 
 export function municipalRouter(env: Env) {
   const router = Router();
   const supabaseAdmin = getAdminSupabase(env);
-
-  async function sendTelegramMessage(botToken: string | undefined, chatId: number | null, text: string) {
-    if (!botToken || !chatId) return;
-    try {
-      await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ chat_id: chatId, text })
-      });
-    } catch (err) {
-      console.error("Failed to send Telegram message:", err);
-    }
-  }
 
   router.get("/reports", requireMunicipal, async (req, res, next) => {
     try {
@@ -160,19 +148,19 @@ export function municipalRouter(env: Env) {
         .eq("id", id);
       if (updateError) throw updateError;
 
-          // After marking resolved, attempt to notify original reporter via Telegram if we have a chat id
-          try {
-            const { data: updatedReport, error: fetched } = await supabaseAdmin.from("reports").select("id, telegram_chat_id, image_url, location_address").eq("id", id).single();
-            if (!fetched && updatedReport && updatedReport.telegram_chat_id) {
-              const chatId = Number(updatedReport.telegram_chat_id);
-              const botToken = env.TELEGRAM_BOT_TOKEN;
-              const shortId = (updatedReport.id || "").toString().slice(0, 8);
-              const message = `✅ Good news — your report ${shortId} has been marked resolved. Thank you for reporting!` + (updatedReport.location_address ? `\n\nLocation: ${updatedReport.location_address}` : "");
-              await sendTelegramMessage(botToken, chatId, message);
-            }
-          } catch (notifyErr) {
-            console.error("Failed to notify reporter about resolution:", notifyErr);
-          }
+      // After marking resolved, attempt to notify original reporter via Telegram if we have a chat id
+      try {
+        const { data: updatedReport, error: fetched } = await supabaseAdmin.from("reports").select("id, telegram_chat_id, image_url, location_address").eq("id", id).single();
+        if (!fetched && updatedReport && updatedReport.telegram_chat_id) {
+          const chatId = Number(updatedReport.telegram_chat_id);
+          const botToken = env.TELEGRAM_BOT_TOKEN;
+          const shortId = (updatedReport.id || "").toString().slice(0, 8);
+          const message = `✅ Good news — your report ${shortId} has been marked resolved. Thank you for reporting!` + (updatedReport.location_address ? `\n\nLocation: ${updatedReport.location_address}` : "");
+          await sendTelegramMessage(botToken, chatId, message);
+        }
+      } catch (notifyErr) {
+        console.error("Failed to notify reporter about resolution:", notifyErr);
+      }
 
       return res.status(200).json({ ok: true });
     } catch (err) {
