@@ -18,10 +18,11 @@ import type { ReportStatus, SeverityLevel } from "@/types";
 import { Constants } from "@/integrations/supabase/types";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
-import { ClipboardList, CheckCircle2, AlertTriangle, MapPin, Search, Users, Clock } from "lucide-react";
+import { ClipboardList, CheckCircle2, AlertTriangle, MapPin, Search, Users, Clock, Building2 } from "lucide-react";
 import { PieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from "recharts";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
+import { useWards } from "@/hooks/useGIS";
 
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -33,8 +34,10 @@ L.Icon.Default.mergeOptions({
 const MunicipalDashboard = () => {
   const [statusFilter, setStatusFilter] = useState<ReportStatus | "all">("all");
   const [severityFilter, setSeverityFilter] = useState<SeverityLevel | "all">("all");
+  const [wardFilter, setWardFilter] = useState<string>("all");
   const [areaSearch, setAreaSearch] = useState("");
   const { data: reports, isLoading } = useMunicipalReports(statusFilter === "all" ? undefined : statusFilter);
+  const { wards } = useWards();
   const { data: hotspots, isLoading: hotspotsLoading } = useHotspots();
   const updateStatus = useUpdateReportStatus();
   const updateAdmin = useUpdateReportAdmin();
@@ -43,8 +46,9 @@ const MunicipalDashboard = () => {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
 
-  const filteredReports = (reports ?? []).filter((r) => {
+  const filteredReports = (reports ?? []).filter((r: any) => {
     if (severityFilter !== "all" && r.severity !== severityFilter) return false;
+    if (wardFilter !== "all" && String(r.ward_no) !== wardFilter) return false;
     if (areaSearch && !r.location_address.toLowerCase().includes(areaSearch.toLowerCase())) return false;
     return true;
   });
@@ -148,6 +152,19 @@ const MunicipalDashboard = () => {
                 {Constants.public.Enums.severity_level.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
               </SelectContent>
             </Select>
+            {wards.length > 0 && (
+              <Select value={wardFilter} onValueChange={setWardFilter}>
+                <SelectTrigger className="w-52"><SelectValue placeholder="Filter by Ward" /></SelectTrigger>
+                <SelectContent className="max-h-64 overflow-y-auto">
+                  <SelectItem value="all">All Wards</SelectItem>
+                  {wards.map((w) => (
+                    <SelectItem key={w.ward_no} value={String(w.ward_no)}>
+                      Ward {w.ward_no} — {w.ward_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           <div className="grid gap-4 md:grid-cols-2 mb-4">
@@ -194,7 +211,8 @@ const MunicipalDashboard = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Location & Details</TableHead>
+                        <TableHead>Location &amp; Details</TableHead>
+                        <TableHead>Ward</TableHead>
                         <TableHead>Date</TableHead>
                         <TableHead>Severity Override</TableHead>
                         <TableHead>Status Override</TableHead>
@@ -207,6 +225,14 @@ const MunicipalDashboard = () => {
                           <TableCell className="max-w-[200px] lg:max-w-xs truncate">
                             <Link to={`/reports/${r.id}`} className="hover:underline font-medium block truncate text-primary">{r.location_address}</Link>
                             <span className="text-xs text-muted-foreground truncate block mt-0.5">{r.description}</span>
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            {(r as any).ward_no ? (
+                              <div className="flex flex-col">
+                                <span className="text-xs font-bold text-primary">W{(r as any).ward_no}</span>
+                                <span className="text-xs text-muted-foreground truncate max-w-[100px]">{(r as any).detected_ward_name ?? ""}</span>
+                              </div>
+                            ) : <span className="text-xs text-muted-foreground">—</span>}
                           </TableCell>
                           <TableCell className="text-muted-foreground whitespace-nowrap text-xs">
                             {format(new Date(r.created_at), "MMM d, yyyy")}

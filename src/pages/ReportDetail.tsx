@@ -11,12 +11,13 @@ import { AnimatedPage, staggerContainer, fadeInUp } from "@/components/AnimatedP
 import { AGENT_LABELS, AGENT_ORDER, SEVERITY_COLORS, STATUS_COLORS } from "@/types";
 import type { AgentType, AgentStageStatus } from "@/types";
 import { format } from "date-fns";
-import { CheckCircle2, Clock, Loader2, XCircle, MapPin, Calendar, Play, FileText, Tag } from "lucide-react";
+import { CheckCircle2, Clock, Loader2, XCircle, MapPin, Calendar, Play, FileText, Tag, Phone, Building2, UserCheck, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/AuthContext";
 import { ResolutionUploadPanel } from "@/components/ResolutionUploadPanel";
 import { BeforeAfterPanel } from "@/components/BeforeAfterPanel";
 import { ManualVerifyPanel } from "@/components/ManualVerifyPanel";
+import { useWardContacts } from "@/hooks/useGIS";
 
 const stageIcon: Record<AgentStageStatus, React.ReactNode> = {
   pending: <Clock className="h-5 w-5 text-muted-foreground" />,
@@ -164,6 +165,9 @@ const ReportDetail = () => {
         )}
       </div>
 
+      {/* ── Ward & Responsible Authority Card ───────────────────────────────── */}
+      <WardAuthorityCard report={report} events={events ?? []} />
+
       {report.status === 'in_progress' && isOfficerOrAdmin && (
         <ResolutionUploadPanel reportId={report.id} />
       )}
@@ -268,3 +272,128 @@ const ReportDetail = () => {
 };
 
 export default ReportDetail;
+
+// ── WardAuthorityCard ─────────────────────────────────────────────────────────
+
+interface ContactRow {
+  role: string;
+  name: string | null | undefined;
+  phone: string | null | undefined;
+  isEscalation?: boolean;
+}
+
+function ContactLine({ role, name, phone, isEscalation }: ContactRow) {
+  if (!name && !phone) return null;
+  return (
+    <div className={`flex items-center justify-between py-2.5 border-b border-border/50 last:border-0 ${isEscalation ? "mt-3 pt-3 border-t-2 border-amber-200 dark:border-amber-800" : ""}`}>
+      <div>
+        <p className={`text-xs font-medium uppercase tracking-wide ${isEscalation ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"}`}>{role}</p>
+        <p className="text-sm font-semibold mt-0.5 text-foreground">{name ?? "—"}</p>
+      </div>
+      {phone && (
+        <a
+          href={`tel:${phone.replace(/[^0-9+]/g, "")}`}
+          className="flex items-center gap-1.5 text-sm text-primary font-medium hover:underline bg-primary/10 px-3 py-1.5 rounded-full transition-colors hover:bg-primary/20"
+        >
+          <Phone className="h-3.5 w-3.5" />
+          {phone}
+        </a>
+      )}
+    </div>
+  );
+}
+
+function WardAuthorityCard({ report, events }: { report: any; events: any[] }) {
+  // Extract authority data from municipal_coordination event metadata
+  const coordEvent = events.find(e => e.agent_type === "municipal_coordination");
+  const meta = coordEvent?.metadata as Record<string, any> | undefined;
+
+  const wardNo = report.ward_no ?? meta?.ward_no;
+  const wardName = report.detected_ward_name ?? meta?.ward_name;
+  const zoneName = meta?.zone_name;
+  const assemblyConstituency = meta?.assembly_constituency;
+
+  // Try contacts from event metadata first (no extra API call needed)
+  const hasMetaContacts = meta && meta.health_inspector;
+
+  // Fallback: fetch from API if event metadata not yet available
+  const { contacts: apiContacts, loading: apiLoading } = useWardContacts(
+    hasMetaContacts ? null : wardNo
+  );
+
+  const contacts = hasMetaContacts ? null : apiContacts;
+
+  // Build contact rows
+  const rows: ContactRow[] = hasMetaContacts
+    ? [
+        { role: "Junior Health Inspector", name: meta.health_inspector?.name, phone: meta.health_inspector?.phone },
+        { role: "Senior Health Inspector", name: meta.sanitation_authority?.name, phone: meta.sanitation_authority?.phone },
+        { role: "Executive Engineer (Ward Officer)", name: meta.ward_officer?.name, phone: meta.ward_officer?.phone },
+        { role: "Revenue Officer", name: meta.revenue_officer?.name, phone: meta.revenue_officer?.phone },
+        { role: "Asst. Revenue Officer", name: meta.assistant_revenue_officer?.name, phone: meta.assistant_revenue_officer?.phone },
+        { role: "Joint Commissioner (Escalation)", name: meta.escalation_contact?.name, phone: meta.escalation_contact?.phone, isEscalation: true },
+      ]
+    : contacts
+    ? [
+        { role: "Junior Health Inspector", name: contacts.jr_health_inspector_name, phone: contacts.jr_health_inspector_phone },
+        { role: "Senior Health Inspector", name: contacts.sr_health_inspector_name, phone: contacts.sr_health_inspector_phone },
+        { role: "Executive Engineer (Ward Officer)", name: contacts.ee_name, phone: contacts.ee_phone },
+        { role: "Revenue Officer", name: contacts.ro_name, phone: contacts.ro_phone },
+        { role: "Asst. Revenue Officer", name: contacts.aro_name, phone: contacts.aro_phone },
+        { role: "Joint Commissioner (Escalation)", name: contacts.jc_name, phone: contacts.jc_phone, isEscalation: true },
+      ]
+    : [];
+
+  if (!wardNo && !meta) return null;
+
+  return (
+    <Card className="glass border-white/40 dark:border-white/10 hover:shadow-lg transition-shadow duration-300 overflow-hidden">
+      <CardHeader className="pb-4 border-b bg-muted/20">
+        <CardTitle className="text-xl flex items-center gap-2">
+          <Building2 className="h-5 w-5 text-primary" />
+          Responsible Municipal Authority
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="pt-6 space-y-5">
+        {/* Ward Info Banner */}
+        {(wardNo || wardName) && (
+          <div className="flex flex-wrap items-center gap-3 p-4 rounded-xl bg-primary/5 border border-primary/10">
+            <MapPin className="h-5 w-5 text-primary shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm text-muted-foreground">Detected Ward</p>
+              <p className="font-bold text-lg leading-tight">
+                {wardNo && <span className="text-primary mr-1.5">Ward {wardNo} —</span>}
+                {wardName}
+              </p>
+              {(zoneName || assemblyConstituency) && (
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {[zoneName && `Zone: ${zoneName}`, assemblyConstituency && `Assembly: ${assemblyConstituency}`].filter(Boolean).join("  ·  ")}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Contacts */}
+        {apiLoading ? (
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => <Skeleton key={i} className="h-10 w-full" />)}
+          </div>
+        ) : rows.length > 0 ? (
+          <div className="divide-y divide-border/50">
+            {rows.map((row, i) => <ContactLine key={i} {...row} />)}
+          </div>
+        ) : (
+          <div className="flex items-center gap-3 p-4 rounded-xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400">
+            <AlertTriangle className="h-4 w-4 shrink-0" />
+            <p className="text-sm">
+              {wardNo
+                ? "Authority contacts not yet seeded. Run: npx tsx backend/src/scripts/importWardContacts.ts"
+                : "Ward not detected yet — run the AI pipeline to identify the responsible ward."}
+            </p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}

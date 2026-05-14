@@ -14,11 +14,57 @@ export type Report = Tables<"reports"> & {
   verification_reasoning?: string | null;
   verification_ran_at?: string | null;
   token_minted?: boolean | null;
+  // GIS fields (added by ward detection pipeline)
+  ward_id?: string | null;
+  ward_no?: number | null;
+  detected_ward_name?: string | null;
 };
 export type ReportEvent = Tables<"report_events">;
 export type Hotspot = Tables<"hotspots">;
 export type TokenTransaction = Tables<"token_transactions">;
 export type UserRole = Tables<"user_roles">;
+
+// ── GIS Types ────────────────────────────────────────────────────────────────
+
+export interface Ward {
+  id: string;
+  ward_no: number;
+  ward_name: string;
+  zone_name: string | null;
+  centroid_lat: number;
+  centroid_lng: number;
+}
+
+export interface WardContacts {
+  ward_no: number;
+  ward_name: string;
+  zone_name: string | null;
+  assembly_constituency: string | null;
+  jc_name: string | null;
+  jc_phone: string | null;
+  dc_name: string | null;
+  dc_phone: string | null;
+  se_name: string | null;
+  se_phone: string | null;
+  ce_name: string | null;
+  ce_phone: string | null;
+  ee_name: string | null;
+  ee_phone: string | null;
+  aee_name: string | null;
+  aee_phone: string | null;
+  ae_name: string | null;
+  ae_phone: string | null;
+  jr_health_inspector_name: string | null;
+  jr_health_inspector_phone: string | null;
+  sr_health_inspector_name: string | null;
+  sr_health_inspector_phone: string | null;
+  ro_name: string | null;
+  ro_phone: string | null;
+  aro_name: string | null;
+  aro_phone: string | null;
+  animal_husbandry_name: string | null;
+  animal_husbandry_phone: string | null;
+}
 
 // Re-export enums
 export type AppRole = Enums<"app_role">;

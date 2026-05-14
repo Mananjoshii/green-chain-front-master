@@ -1,28 +1,23 @@
+/**
+ * municipalCoordination.ts — Ward Authority Resolution
+ * -----------------------------------------------------
+ * Replaces the old hardcoded facility-routing switch statement.
+ *
+ * This stage:
+ * 1. Reads the ward_no resolved by the geoIntelligence stage
+ * 2. Fetches real BBMP authority contacts from the ward_contacts table
+ * 3. Emits a municipal_coordination event with structured contact info
+ * 4. Updates report status to "in_progress"
+ *
+ * No facility routing, no disposal logistics, no beat generation.
+ */
+
 import type { Env } from "../../env.js";
 import { getAdminSupabase } from "../../supabase/clients.js";
 import { upsertReportEvent } from "../events.js";
+import { getWardContacts } from "../../services/geo.js";
 
 type Severity = "low" | "medium" | "high" | "critical";
-type WasteCategory = "organic" | "plastic" | "e_waste" | "construction" | "hazardous" | "mixed" | "other";
-
-function facilityFor(category: WasteCategory) {
-  switch (category) {
-    case "e_waste":
-      return { facility_id: "facility:ewaste_center_1", facility_type: "specialized_ewaste" as const };
-    case "hazardous":
-      return { facility_id: "facility:hazmat_unit_1", facility_type: "hazardous_waste" as const };
-    case "construction":
-      return { facility_id: "facility:cnd_depot_1", facility_type: "construction_debris" as const };
-    case "organic":
-      return { facility_id: "facility:compost_site_1", facility_type: "organic_compost" as const };
-    case "plastic":
-      return { facility_id: "facility:mrf_plastics_1", facility_type: "recycling_mrf" as const };
-    case "mixed":
-      return { facility_id: "facility:sorting_hub_1", facility_type: "sorting" as const };
-    default:
-      return { facility_id: "facility:general_waste_1", facility_type: "general" as const };
-  }
-}
 
 function scoreToSeverity(score: number): Severity {
   if (score >= 8) return "critical";
@@ -34,14 +29,15 @@ function scoreToSeverity(score: number): Severity {
 export async function stageMunicipalCoordination(env: Env, reportId: string) {
   const supabaseAdmin = getAdminSupabase(env);
 
+  // Fetch report — include ward_no persisted by geoIntelligence stage
   const { data: report, error } = await supabaseAdmin
     .from("reports")
-    .select("id,category,severity,status,assigned_to")
+    .select("id,category,severity,status,ward_no,detected_ward_name")
     .eq("id", reportId)
     .single();
   if (error) throw error;
 
-  // Pull contamination signal from stage 1 metadata if present.
+  // ── Severity scoring (preserved from original logic) ──────────────────────
   const { data: ev, error: evErr } = await supabaseAdmin
     .from("report_events")
     .select("metadata")
@@ -52,47 +48,114 @@ export async function stageMunicipalCoordination(env: Env, reportId: string) {
 
   const contamination = Boolean((ev?.metadata as any)?.contamination_at_source);
 
-  // Deterministic severity logic (no schema changes).
-  let score = 3; // baseline
-  const cat = report.category as WasteCategory;
-  if (cat === "hazardous") score += 4;
-  if (cat === "e_waste") score += 2;
+  let score = 3;
+  const cat = report.category as string;
+  if (cat === "hazardous")   score += 4;
+  if (cat === "e_waste")     score += 2;
   if (cat === "construction") score += 2;
-  if (cat === "mixed") score += 2;
-  if (contamination) score += 2;
+  if (cat === "mixed")       score += 2;
+  if (contamination)         score += 2;
 
-  // If report already marked higher by citizen, respect it as a floor.
   const floor: Record<Severity, number> = { low: 1, medium: 4, high: 6, critical: 8 };
   score = Math.max(score, floor[report.severity as Severity] ?? 1);
-
   const severity = scoreToSeverity(score);
-  const facility = facilityFor(cat);
-  const assigned_to = facility.facility_id;
 
+  // ── Update report status ──────────────────────────────────────────────────
   const { error: updErr } = await supabaseAdmin
     .from("reports")
-    .update({
-      severity,
-      status: "assigned",
-      // assigned_to is a UUID FK — store facility string in event metadata instead
-    })
+    .update({ severity, status: "in_progress" })
     .eq("id", reportId);
   if (updErr) throw updErr;
 
+  // ── Ward authority contacts ───────────────────────────────────────────────
+  const wardNo = report.ward_no as number | null;
+  const wardName = report.detected_ward_name as string | null;
+
+  let authorityPayload: Record<string, unknown> = {
+    ward_no:   wardNo,
+    ward_name: wardName ?? "Unknown Ward",
+    note:      "Ward contacts not yet seeded — run importWardContacts.ts"
+  };
+
+  if (wardNo) {
+    const contacts = await getWardContacts(env, wardNo);
+
+    if (contacts) {
+      authorityPayload = {
+        ward_no:    contacts.ward_no,
+        ward_name:  contacts.ward_name,
+        zone_name:  contacts.zone_name,
+        assembly_constituency: contacts.assembly_constituency,
+
+        // Primary field officer for sanitation complaints
+        health_inspector: {
+          name:  contacts.jr_health_inspector_name,
+          phone: contacts.jr_health_inspector_phone,
+          role:  "Junior Health Inspector"
+        },
+
+        // Senior supervisor
+        sanitation_authority: {
+          name:  contacts.sr_health_inspector_name,
+          phone: contacts.sr_health_inspector_phone,
+          role:  "Senior Health Inspector"
+        },
+
+        // Ward-level engineering officer
+        ward_officer: {
+          name:  contacts.ee_name,
+          phone: contacts.ee_phone,
+          role:  "Executive Engineer"
+        },
+
+        // Revenue oversight
+        revenue_officer: {
+          name:  contacts.ro_name,
+          phone: contacts.ro_phone,
+          role:  "Revenue Officer"
+        },
+
+        assistant_revenue_officer: {
+          name:  contacts.aro_name,
+          phone: contacts.aro_phone,
+          role:  "Assistant Revenue Officer"
+        },
+
+        // Escalation — Joint Commissioner of the zone
+        escalation_contact: {
+          name:  contacts.jc_name,
+          phone: contacts.jc_phone,
+          role:  "Joint Commissioner"
+        },
+
+        // Additional contacts available
+        deputy_commissioner: {
+          name:  contacts.dc_name,
+          phone: contacts.dc_phone
+        },
+        animal_husbandry: {
+          name:  contacts.animal_husbandry_name,
+          phone: contacts.animal_husbandry_phone
+        }
+      };
+    }
+  }
+
+  // ── Emit coordination event ───────────────────────────────────────────────
+  const wardDisplay = wardNo
+    ? `Ward ${wardNo} — ${wardName ?? "Unknown"}`
+    : "Ward not detected";
+
   await upsertReportEvent(env, {
     reportId,
-    agentType: "municipal_coordination",
+    agentType:   "municipal_coordination",
     stageStatus: "processing",
-    message: `Routed to ${facility.facility_id} with severity '${severity}'`,
+    message:     `Assigned to ${wardDisplay} · Severity: ${severity}`,
     metadata: {
       severity,
-      facility,
       contamination_at_source: contamination,
-      rationale: {
-        category: cat,
-        score
-      }
+      category_score:          { category: cat, score },
+      ...authorityPayload
     }
   });
 }
-

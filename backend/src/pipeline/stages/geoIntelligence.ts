@@ -22,16 +22,42 @@ export async function stageGeoIntelligence(env: Env, reportId: string) {
     throw e;
   }
 
-  // Bounding box for a quick prefilter (rough, fine for hackathon scale).
   const lat = report.latitude;
   const lng = report.longitude;
-  const delta = 0.01; // ~1.1km
+
+  // ── Ward detection (PostGIS ST_Contains — covers all 198 BBMP wards) ────────
+  const ward = await findWard(env, lat, lng);
+
+  // Persist ward metadata on the report row immediately
+  if (ward) {
+    await supabaseAdmin
+      .from("reports")
+      .update({
+        ward_id:            ward.wardId,
+        ward_no:            ward.wardNo,
+        detected_ward_name: ward.wardName
+      })
+      .eq("id", reportId);
+  }
+
+  const wardMeta = ward
+    ? {
+        ward_id:          ward.wardId,
+        ward_no:          ward.wardNo,
+        ward_name:        ward.wardName,
+        zone_name:        ward.zoneName,
+        detection_method: ward.detectionMethod
+      }
+    : { ward_name: null, detection_method: "none" };
+
+  // ── Hotspot clustering (unchanged — bounding-box + haversine) ───────────────
+  const delta = 0.01; // ~1.1 km prefilter
 
   const { data: candidates, error: hsErr } = await supabaseAdmin
     .from("hotspots")
     .select("*")
-    .gte("latitude", lat - delta)
-    .lte("latitude", lat + delta)
+    .gte("latitude",  lat - delta)
+    .lte("latitude",  lat + delta)
     .gte("longitude", lng - delta)
     .lte("longitude", lng + delta)
     .limit(500);
@@ -50,13 +76,8 @@ export async function stageGeoIntelligence(env: Env, reportId: string) {
     }
   }
 
-  // ── Ward identification ──────────────────────────────────────────────────
-  const ward = findWard(lat, lng);
-  const wardMeta = ward
-    ? { ward_name: ward.wardName, ward_no: ward.wardNo, ward_id: ward.wardId }
-    : { ward_name: null };
+  const wardSuffix = ward ? ` · Ward: ${ward.wardName}` : "";
 
-  // ── Hotspot clustering ───────────────────────────────────────────────────
   if (nearest && nearestDist <= DEFAULT_NEARBY_METERS) {
     const newCount = (nearest.report_count ?? 0) + 1;
     const severityScore: Record<string, number> = { low: 1, medium: 2, high: 3, critical: 4 };
@@ -69,13 +90,12 @@ export async function stageGeoIntelligence(env: Env, reportId: string) {
       .eq("id", nearest.id);
     if (updErr) throw updErr;
 
-    const wardSuffix = ward ? ` · Ward: ${ward.wardName}` : "";
     await upsertReportEvent(env, {
       reportId,
-      agentType: "geo_intelligence",
+      agentType:   "geo_intelligence",
       stageStatus: "processing",
-      message: `Linked to hotspot '${nearest.area_name}' (${Math.round(nearestDist)}m)${wardSuffix}`,
-      metadata: { hotspot_id: nearest.id, distance_meters: nearestDist, action: "incremented", ...wardMeta }
+      message:     `Linked to hotspot '${nearest.area_name}' (${Math.round(nearestDist)}m)${wardSuffix}`,
+      metadata:    { hotspot_id: nearest.id, distance_meters: nearestDist, action: "incremented", ...wardMeta }
     });
     return;
   }
@@ -84,9 +104,9 @@ export async function stageGeoIntelligence(env: Env, reportId: string) {
   const { data: created, error: insErr } = await supabaseAdmin
     .from("hotspots")
     .insert({
-      area_name: areaName,
-      latitude: lat,
-      longitude: lng,
+      area_name:    areaName,
+      latitude:     lat,
+      longitude:    lng,
       report_count: 1,
       avg_severity: 2,
       last_updated: new Date().toISOString()
@@ -95,13 +115,11 @@ export async function stageGeoIntelligence(env: Env, reportId: string) {
     .single();
   if (insErr) throw insErr;
 
-  const wardSuffix = ward ? ` · Ward: ${ward.wardName}` : "";
   await upsertReportEvent(env, {
     reportId,
-    agentType: "geo_intelligence",
+    agentType:   "geo_intelligence",
     stageStatus: "processing",
-    message: `Created new hotspot '${created.area_name}'${wardSuffix}`,
-    metadata: { hotspot_id: created.id, action: "created", ...wardMeta }
+    message:     `Created new hotspot '${created.area_name}'${wardSuffix}`,
+    metadata:    { hotspot_id: created.id, action: "created", ...wardMeta }
   });
 }
-
