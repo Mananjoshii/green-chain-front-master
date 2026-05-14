@@ -231,12 +231,22 @@ export async function runResolutionVerificationAgent(
     await mintToken(env, reportId);
 
     // After marking resolved and minting tokens, notify reporter via Telegram if chat_id exists
+    console.log("=== RESOLUTION VERIFICATION DEBUG ===");
+    console.log("Decision:", decision);
+    console.log("Report ID:", reportId);
     try {
       const { data: updatedReport } = await supabaseAdmin
         .from('reports')
         .select('id, telegram_chat_id, location_address, image_url, resolution_image_url, verification_reasoning')
         .eq('id', reportId)
         .single();
+
+      console.log("Updated report:", {
+        id: updatedReport?.id,
+        telegram_chat_id: updatedReport?.telegram_chat_id,
+        image_url: !!updatedReport?.image_url,
+        resolution_image_url: !!updatedReport?.resolution_image_url
+      });
 
       if (updatedReport?.telegram_chat_id) {
         const chatId = Number(updatedReport.telegram_chat_id);
@@ -260,10 +270,14 @@ export async function runResolutionVerificationAgent(
         }
 
         if (media.length > 0) {
+          console.log("Sending media group with", media.length, "items to chat:", chatId);
           await sendTelegramMediaGroup(botToken, chatId, media);
         } else {
+          console.log("Sending text message to chat:", chatId);
           await sendTelegramMessage(botToken, chatId, caption);
         }
+      } else {
+        console.log("⚠️ No telegram_chat_id found for report", reportId);
       }
     } catch (notifyErr) {
       console.error("Failed to notify reporter via Telegram about resolution:", notifyErr);
