@@ -49,9 +49,9 @@ const Landing = () => {
 
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filteredHotspots = hotspots?.filter(h =>
-    h.area_name.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
+  const filteredHotspots = hotspots
+    ?.filter(h => h.area_name.toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a, b) => Number(b.report_count ?? 0) - Number(a.report_count ?? 0)) || [];
 
   useEffect(() => {
     if (isLoading || !mapContainerRef.current) return;

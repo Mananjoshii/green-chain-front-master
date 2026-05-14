@@ -237,8 +237,8 @@ const ReportCreate = () => {
     <AnimatedPage className="mx-auto max-w-4xl space-y-6">
       <Card className="glass overflow-hidden border-white/40 dark:border-white/10 shadow-lg">
         <CardHeader className="bg-muted/10 border-b pb-6 mb-6">
-          <CardTitle className="text-3xl font-bold tracking-tight">Report Waste</CardTitle>
-          <p className="text-muted-foreground">Help keep the community clean by reporting issues.</p>
+          <CardTitle className="text-3xl font-bold tracking-tight text-center">Report Waste</CardTitle>
+          <p className="text-muted-foreground text-center">Help keep the community clean by reporting issues.</p>
         </CardHeader>
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-8">
@@ -261,7 +261,7 @@ const ReportCreate = () => {
                   </motion.div>
                 ) : (
                   <>
-                    {/* <label
+                    <label
                       onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
                       onDragLeave={() => setDragOver(false)}
                       onDrop={handleDrop}
@@ -276,7 +276,7 @@ const ReportCreate = () => {
                         </div>
                       </motion.div>
                       <input type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
-                    </label> */}
+                    </label>
 
                     <div className="flex flex-col gap-3 justify-center sm:w-48 shrink-0 relative">
                       <div className="hidden sm:flex absolute left-0 -ml-[23px] top-1/2 -translate-y-1/2 bg-background p-1 text-xs text-muted-foreground uppercase font-semibold tracking-wider z-10 rounded-full">Or</div>
