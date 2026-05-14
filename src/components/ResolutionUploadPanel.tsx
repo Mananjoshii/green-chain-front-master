@@ -35,7 +35,8 @@ export function ResolutionUploadPanel({ reportId }: ResolutionUploadPanelProps) 
       formData.append('resolution_image', file);
       formData.append('officer_notes', notes);
 
-      const res = await fetch(`/api/municipal/reports/${reportId}/submit-resolution`, {
+      const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+      const res = await fetch(`${API_BASE_URL}/municipal/reports/${reportId}/submit-resolution`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`
