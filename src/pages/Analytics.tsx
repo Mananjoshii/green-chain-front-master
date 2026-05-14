@@ -169,31 +169,7 @@ const Analytics = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Future Scope */}
-      <div>
-        <h2 className="mb-4 text-2xl font-bold">Future Scope</h2>
-        <motion.div variants={staggerContainer} initial="initial" whileInView="animate" viewport={{ once: true }} className="grid gap-4 md:grid-cols-3">
-          {[
-            { icon: Mic, title: "Voice-based Multilingual Reporting", desc: "Enable citizens to report waste issues using voice commands in multiple local languages for maximum accessibility." },
-            { icon: BarChart3, title: "ESG Dashboards", desc: "Environmental, Social, and Governance metrics dashboards for corporate sponsors and city governance reporting." },
-            { icon: Wifi, title: "IoT Smart Bins Integration", desc: "Connected waste bins that report fill levels in real-time, enabling predictive collection scheduling." },
-          ].map((item, i) => (
-            <motion.div key={i} variants={fadeInUp}>
-              <GlassCard className="p-6 border-dashed border h-full">
-                <div className="flex items-start gap-4">
-                  <motion.div whileHover={{ rotate: 12, scale: 1.1 }} transition={{ type: "spring", stiffness: 300 }} className="rounded-lg bg-muted p-2">
-                    <item.icon className="h-5 w-5 text-muted-foreground" />
-                  </motion.div>
-                  <div>
-                    <p className="font-semibold">{item.title}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">{item.desc}</p>
-                  </div>
-                </div>
-              </GlassCard>
-            </motion.div>
-          ))}
-        </motion.div>
-      </div>
+
     </AnimatedPage>
   );
 };
